@@ -1,0 +1,35 @@
+{{define "session_detail.html"}}{{template "head" .}}
+  {{with .Session}}
+  <section class="page-head">
+    <h1>{{.DisplayName}}</h1>
+    <a class="back" href="/sessions">← all sessions</a>
+  </section>
+  <dl class="meta">
+    <dt>Session ID</dt><dd class="mono">{{.SessionID}}</dd>
+    <dt>Project path</dt><dd class="mono">{{.ProjectPath}}</dd>
+    <dt>Last activity</dt><dd>{{prettyTime .LastActivity}}</dd>
+    <dt>Messages</dt><dd>{{.MessageCount}}</dd>
+    <dt>File size</dt><dd>{{humanSize .FileSize}}</dd>
+    {{if .CustomTitle}}<dt>Custom title</dt><dd>{{.CustomTitle}}</dd>{{end}}
+    {{if .AITitle}}<dt>AI title</dt><dd>{{.AITitle}}</dd>{{end}}
+    <dt>File</dt><dd class="mono">{{.FilePath}}</dd>
+  </dl>
+  {{end}}
+
+  {{with .Chain}}
+  {{if or .Parent .Children}}
+  <section class="chain">
+    <h2>Resume / branch chain</h2>
+    {{with .Parent}}<p>Resumed from: <a href="/sessions/{{.SessionID}}">{{.DisplayName}}</a></p>{{end}}
+    {{if .Children}}<p>Continued by:</p><ul>
+      {{range .Children}}<li><a href="/sessions/{{.SessionID}}">{{.DisplayName}}</a></li>{{end}}
+    </ul>{{end}}
+  </section>
+  {{end}}
+  {{end}}
+
+  <section class="transcript">
+    <h2>Transcript</h2>
+    {{template "_transcript.html" .}}
+  </section>
+{{template "foot" .}}{{end}}

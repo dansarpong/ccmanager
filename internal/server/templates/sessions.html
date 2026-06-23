@@ -1,0 +1,31 @@
+{{define "sessions.html"}}{{template "head" .}}
+  <section class="page-head">
+    <h1>Sessions</h1>
+    <form class="search" hx-get="/search" hx-target="#search-results" hx-trigger="submit, keyup changed delay:400ms from:input[name=q]">
+      <input type="search" name="q" placeholder="Full-text search across all transcripts…" autocomplete="off">
+    </form>
+    <form method="post" action="/refresh" hx-post="/refresh" hx-target="#session-list" hx-include="[name=sort],[name=project]">
+      <button type="submit">Refresh index</button>
+    </form>
+  </section>
+
+  <div id="search-results"></div>
+
+  <form class="filters" hx-get="/sessions" hx-target="#session-list" hx-select="#session-list" hx-swap="outerHTML" hx-trigger="change">
+    <label>Sort:
+      <select name="sort">
+        <option value="activity" {{if eq .Sort "activity"}}selected{{end}}>Last activity</option>
+        <option value="size" {{if eq .Sort "size"}}selected{{end}}>File size</option>
+        <option value="count" {{if eq .Sort "count"}}selected{{end}}>Message count</option>
+      </select>
+    </label>
+    <label>Project:
+      <select name="project">
+        <option value="">All projects</option>
+        {{range .Projects}}<option value="{{.}}" {{if eq . $.Project}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </label>
+  </form>
+
+  {{template "_session_list.html" .}}
+{{template "foot" .}}{{end}}
