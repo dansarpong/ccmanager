@@ -1,0 +1,19 @@
+{{define "_search_results.html"}}<div id="search-results">
+  {{if .Error}}<p class="error">Search error: {{.Error}}</p>{{end}}
+  {{if .Query}}
+    {{if .Hits}}
+    <h2>{{len .Hits}} results for “{{.Query}}”</h2>
+    <ul class="hits">
+      {{range .Hits}}
+      <li>
+        <a href="/sessions/{{.SessionID}}">{{if .DisplayName}}{{.DisplayName}}{{else}}{{.SessionID}}{{end}}</a>
+        <div class="project">{{.ProjectPath}}</div>
+        <div class="snippet">{{.SnippetHTML}}</div>
+      </li>
+      {{end}}
+    </ul>
+    {{else if not .Error}}
+    <p class="empty">No matches for “{{.Query}}”.</p>
+    {{end}}
+  {{end}}
+</div>{{end}}

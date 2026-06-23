@@ -1,0 +1,22 @@
+{{define "_session_list.html"}}<table id="session-list" class="sessions">
+  <thead>
+    <tr>
+      <th>Name</th><th>Project</th><th>Last activity</th><th class="num">Msgs</th><th class="num">Size</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{range .Sessions}}
+    <tr>
+      <td><a href="/sessions/{{.SessionID}}">{{.DisplayName}}</a>
+        {{if .FirstParentUUID}}<span class="badge" title="Resumed or branched from another session">↳ resumed</span>{{end}}
+      </td>
+      <td class="project">{{.ProjectPath}}</td>
+      <td>{{prettyTime .LastActivity}}</td>
+      <td class="num">{{.MessageCount}}</td>
+      <td class="num">{{humanSize .FileSize}}</td>
+    </tr>
+    {{else}}
+    <tr><td colspan="5" class="empty">No sessions indexed yet. Click “Refresh index”.</td></tr>
+    {{end}}
+  </tbody>
+</table>{{end}}
