@@ -1,0 +1,26 @@
+{{define "memory_inventory.html"}}{{template "head" .}}
+  <section class="page-head">
+    <h1>Memory inventory</h1>
+    <a class="back" href="/memory/resolve">per-project resolved view →</a>
+  </section>
+  <p class="muted">Every memory file ccmanager found under the config root, for cleanup across projects.</p>
+
+  <table class="sessions">
+    <thead>
+      <tr><th>File</th><th>Kind</th><th class="num">Lines</th><th class="num">Size</th><th></th></tr>
+    </thead>
+    <tbody>
+      {{range .Items}}
+      <tr>
+        <td class="mono">{{.Path}}</td>
+        <td><span class="layer layer-{{.Kind}}">{{.Kind}}</span></td>
+        <td class="num">{{.Lines}}{{if .TooLong}} <span class="badge err" title="over 200 lines">long</span>{{end}}</td>
+        <td class="num">{{humanSize .Size}}</td>
+        <td>{{if .ReadOnly}}<span class="badge readonly">read-only</span>{{end}}</td>
+      </tr>
+      {{else}}
+      <tr><td colspan="5" class="empty">No memory files found.</td></tr>
+      {{end}}
+    </tbody>
+  </table>
+{{template "foot" .}}{{end}}
