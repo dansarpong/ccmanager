@@ -1,0 +1,34 @@
+{{define "trash.html"}}{{template "head" .}}
+  <section class="page-head">
+    <h1>Trash</h1>
+    {{if .Entries}}
+    <form method="post" action="/trash/empty" onsubmit="return confirm('Permanently delete all trashed items?')">
+      <button type="submit" class="danger">Empty now</button>
+    </form>
+    {{end}}
+  </section>
+  <p class="muted">Deleted files and pre-edit backups, restorable for 30 days, then purged.</p>
+
+  <table class="sessions">
+    <thead>
+      <tr><th>Original path</th><th>Kind</th><th>Deleted</th><th>Purges after</th><th></th></tr>
+    </thead>
+    <tbody>
+      {{range .Entries}}
+      <tr>
+        <td class="mono">{{.OriginalPath}}</td>
+        <td><span class="layer">{{.Kind}}</span></td>
+        <td>{{prettyTime .DeletedAt}}</td>
+        <td>{{prettyTime .PurgeAfter}}</td>
+        <td>
+          <form method="post" action="/trash/{{.ID}}/restore">
+            <button type="submit">Restore</button>
+          </form>
+        </td>
+      </tr>
+      {{else}}
+      <tr><td colspan="5" class="empty">Trash is empty.</td></tr>
+      {{end}}
+    </tbody>
+  </table>
+{{template "foot" .}}{{end}}

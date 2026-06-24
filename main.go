@@ -10,11 +10,13 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"ccmanager/internal/config"
 	"ccmanager/internal/server"
 	"ccmanager/internal/sessions"
 	"ccmanager/internal/store"
+	"ccmanager/internal/trash"
 )
 
 func main() {
@@ -42,6 +44,13 @@ func run() error {
 	}
 	defer st.Close()
 
+	tr := trash.New(st, cfg.TrashDir)
+	if n, err := tr.PurgeExpired(time.Now()); err != nil {
+		log.Printf("warning: purging expired trash: %v", err)
+	} else if n > 0 {
+		log.Printf("purged %d expired trash entries", n)
+	}
+
 	log.Printf("indexing transcripts under %s …", cfg.ProjectsDir)
 	res, err := sessions.Index(st, cfg)
 	if err != nil {
@@ -49,7 +58,7 @@ func run() error {
 	}
 	log.Printf("indexed: %d scanned, %d unchanged, %d failed", res.Scanned, res.Skipped, res.Failed)
 
-	srv, err := server.New(cfg, st)
+	srv, err := server.New(cfg, st, tr)
 	if err != nil {
 		return err
 	}

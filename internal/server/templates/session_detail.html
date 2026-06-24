@@ -14,6 +14,10 @@
     {{if .AITitle}}<dt>AI title</dt><dd>{{.AITitle}}</dd>{{end}}
     <dt>File</dt><dd class="mono">{{.FilePath}}</dd>
   </dl>
+  <form method="post" action="/sessions/{{.SessionID}}/delete" class="inline"
+        onsubmit="return confirm('Move this session to the trash?')">
+    <button type="submit" class="danger">Delete (move to trash)</button>
+  </form>
   {{end}}
 
   {{with .Chain}}

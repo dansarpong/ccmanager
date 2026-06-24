@@ -1,0 +1,18 @@
+{{define "memory_edit.html"}}{{template "head" .}}
+  <section class="page-head">
+    <h1>Edit memory file</h1>
+    <a class="back" href="/memory">← inventory</a>
+  </section>
+  <p class="mono muted">{{.Path}}</p>
+  {{if .Saved}}<p class="saved-banner">Saved. A backup of the previous version is in the trash.</p>{{end}}
+
+  <form method="post" action="/memory/save" class="editor">
+    <input type="hidden" name="path" value="{{.Path}}">
+    <input type="hidden" name="token" value="{{.Token}}">
+    <textarea name="content" rows="28" spellcheck="false">{{.Content}}</textarea>
+    <div class="editor-actions">
+      <button type="submit">Save</button>
+      <a class="back" href="/memory/resolve">cancel</a>
+    </div>
+  </form>
+{{template "foot" .}}{{end}}

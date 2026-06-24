@@ -7,7 +7,7 @@
 
   <table class="sessions">
     <thead>
-      <tr><th>File</th><th>Kind</th><th class="num">Lines</th><th class="num">Size</th><th></th></tr>
+      <tr><th>File</th><th>Kind</th><th class="num">Lines</th><th class="num">Size</th><th>Actions</th></tr>
     </thead>
     <tbody>
       {{range .Items}}
@@ -16,7 +16,14 @@
         <td><span class="layer layer-{{.Kind}}">{{.Kind}}</span></td>
         <td class="num">{{.Lines}}{{if .TooLong}} <span class="badge err" title="over 200 lines">long</span>{{end}}</td>
         <td class="num">{{humanSize .Size}}</td>
-        <td>{{if .ReadOnly}}<span class="badge readonly">read-only</span>{{end}}</td>
+        <td class="actions">
+          {{if .ReadOnly}}<span class="badge readonly">read-only</span>{{else}}<a href="/memory/edit?path={{.Path}}">edit</a>{{end}}
+          <form method="post" action="/memory/delete" class="inline"
+                onsubmit="return confirm('Move this file to trash?')">
+            <input type="hidden" name="path" value="{{.Path}}">
+            <button type="submit" class="link-danger">delete</button>
+          </form>
+        </td>
       </tr>
       {{else}}
       <tr><td colspan="5" class="empty">No memory files found.</td></tr>

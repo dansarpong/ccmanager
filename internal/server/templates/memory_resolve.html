@@ -35,6 +35,7 @@
         {{if .Conditional}}<span class="badge conditional" title="paths: {{.Paths}}">conditional</span>{{end}}
         {{if .Excluded}}<span class="badge excluded">excluded</span>{{end}}
         {{if .Err}}<span class="badge err">read error</span>{{end}}
+        <a class="edit-link" href="/memory/edit?path={{.Path}}">edit</a>
       </header>
       {{if .Conditional}}<div class="paths">applies to: {{range .Paths}}<code>{{.}}</code> {{end}}</div>{{end}}
       <details>
