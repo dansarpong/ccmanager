@@ -11,22 +11,24 @@ import (
 	"ccmanager/internal/config"
 	"ccmanager/internal/sessions"
 	"ccmanager/internal/store"
+	"ccmanager/internal/trash"
 )
 
 // Server holds the dependencies shared by all handlers.
 type Server struct {
 	cfg   config.Config
 	store *store.Store
+	trash *trash.Trash
 	tmpl  *template.Template
 }
 
 // New builds a Server with its templates parsed.
-func New(cfg config.Config, st *store.Store) (*Server, error) {
+func New(cfg config.Config, st *store.Store, tr *trash.Trash) (*Server, error) {
 	tmpl, err := parseTemplates()
 	if err != nil {
 		return nil, fmt.Errorf("parsing templates: %w", err)
 	}
-	return &Server{cfg: cfg, store: st, tmpl: tmpl}, nil
+	return &Server{cfg: cfg, store: st, trash: tr, tmpl: tmpl}, nil
 }
 
 // Routes returns the HTTP handler with all routes registered, using Go 1.22+
@@ -48,6 +50,15 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /memory", s.handleMemoryInventory)
 	mux.HandleFunc("GET /memory/resolve", s.handleMemoryResolve)
 	mux.HandleFunc("GET /memory/lint", s.handleMemoryLint)
+	mux.HandleFunc("GET /memory/edit", s.handleMemoryEdit)
+	mux.HandleFunc("POST /memory/save", s.handleMemorySave)
+	mux.HandleFunc("POST /memory/delete", s.handleMemoryDelete)
+
+	mux.HandleFunc("POST /sessions/{id}/delete", s.handleSessionDelete)
+
+	mux.HandleFunc("GET /trash", s.handleTrashList)
+	mux.HandleFunc("POST /trash/{id}/restore", s.handleTrashRestore)
+	mux.HandleFunc("POST /trash/empty", s.handleTrashEmpty)
 
 	return mux
 }

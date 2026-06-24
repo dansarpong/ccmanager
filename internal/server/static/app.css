@@ -118,3 +118,17 @@ dl.meta dd { margin: 0; word-break: break-all; }
 .finding .rule { font-weight: 700; font-size: .75rem; text-transform: uppercase; color: var(--muted); }
 .finding .loc { font-size: .8rem; color: var(--muted); margin-left: .5rem; }
 .finding .msg { margin: .25rem 0; }
+
+.editor textarea { width: 100%; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: .6rem; }
+.editor-actions { display: flex; gap: 1rem; align-items: center; margin-top: .6rem; }
+.editor-actions a { color: var(--muted); }
+
+button.danger, button.link-danger { color: #f7768e; }
+button.danger { border-color: #f7768e; }
+button.link-danger { background: none; border: none; padding: 0; cursor: pointer; text-decoration: underline; }
+form.inline { display: inline; margin: 0; }
+.actions { display: flex; gap: .6rem; align-items: center; white-space: nowrap; }
+.edit-link { margin-left: auto; color: var(--muted); }
+
+.saved-banner { background: #2c3a2c; border: 1px solid #9ece6a; color: #c0e89a; padding: .5rem .75rem; border-radius: 6px; }
+.warn-banner { background: #3a2c2c; border: 1px solid #f7768e; color: #ffb0bd; padding: .6rem .8rem; border-radius: 6px; }

@@ -1,0 +1,17 @@
+{{define "_delete_confirm.html"}}{{template "head" .}}
+  <section class="page-head"><h1>Delete this session?</h1></section>
+  {{with .Session}}
+  <p>You are about to move <strong>{{.DisplayName}}</strong> to the trash.</p>
+  <p class="warn-banner">⚠ {{$.Warning}} It can be restored from the trash for {{30}} days.</p>
+  <dl class="meta">
+    <dt>Project</dt><dd class="mono">{{.ProjectPath}}</dd>
+    <dt>Messages</dt><dd>{{.MessageCount}}</dd>
+    <dt>File</dt><dd class="mono">{{.FilePath}}</dd>
+  </dl>
+  <form method="post" action="/sessions/{{.SessionID}}/delete">
+    <input type="hidden" name="confirm" value="1">
+    <button type="submit" class="danger">Move to trash</button>
+    <a class="back" href="/sessions/{{.SessionID}}">cancel</a>
+  </form>
+  {{end}}
+{{template "foot" .}}{{end}}
