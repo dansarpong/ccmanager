@@ -1,0 +1,261 @@
+# ccmanager
+
+A small, local web tool for seeing, searching, and safely cleaning up everything
+Claude Code keeps on your machine: your **session transcripts** and your **memory
+files** (`CLAUDE.md`, rules, and auto memory).
+
+It is a single static Go binary that serves a server-rendered web UI on
+`127.0.0.1` only. There is no database server, no JavaScript build chain, and no
+network service exposed to your LAN — it edits memory and deletes sessions, so it
+must never be reachable from another machine.
+
+---
+
+## Why this exists
+
+Claude Code stores a lot under `~/.claude`: one JSONL transcript per session
+(these add up to hundreds of megabytes), plus a growing pile of memory files
+across every project. There is no built-in way to browse them, full-text search
+across them, or safely prune them — and no way to *see* how memory actually gets
+assembled for a given working directory. ccmanager fills those gaps:
+
+- **Sessions** — browse every transcript, search across all of them, and delete
+  the ones you no longer need (recoverably).
+- **Memory** — see the exact, ordered stack of memory files Claude Code loads for
+  a directory, with both a "what Claude sees" rendering and the raw files;
+  inventory every memory file on the machine; edit the ones you own; and get
+  lint + LLM suggestions for improving them.
+- **Safety by construction** — deletes go to a 30-day trash, edits are atomic and
+  backed up, auto memory is read-only, and the LLM advisor only ever *proposes*.
+
+---
+
+## Build and run
+
+Go 1.26+ is required. On this machine Go lives at `/usr/local/go/bin/go`; if it
+is not already on your `PATH`, prepend it:
+
+```sh
+export PATH=/usr/local/go/bin:$PATH
+
+cd ccmanager
+go build ./...
+go run . -port 8765      # default port is 8765
+```
+
+Then open <http://127.0.0.1:8765>. The first launch indexes all transcripts
+(this can take a few seconds for a large history); subsequent launches only
+re-index files that changed.
+
+If `go mod tidy` or the first build fails with a proxy connection reset, retry,
+or set `GOSUMDB=off`.
+
+### Configuration
+
+| What | How | Default |
+| --- | --- | --- |
+| Which Claude Code config dir to read | `CLAUDE_CONFIG_DIR` env var | `~/.claude` |
+| Listen port (always bound to `127.0.0.1`) | `-port` flag | `8765` |
+| `claude` CLI for the advisor | found on `PATH` | optional; advisor degrades gracefully if absent |
+
+ccmanager keeps its own state (the SQLite index and the trash) under
+`<config-dir>/ccmanager/`, so it never writes into Claude Code's own data
+except when you explicitly edit or delete a file.
+
+---
+
+## Safety model
+
+This tool can change and delete your files, so it is conservative by design:
+
+- **Localhost only.** The server binds `127.0.0.1`. It is never reachable from
+  the network.
+- **Trash with 30-day restore.** Deleting a session or a memory file moves it
+  into `<config-dir>/ccmanager/trash/` with a manifest entry; it is restorable
+  for 30 days, then purged. Purge runs opportunistically on launch, and there is
+  an "Empty now" action.
+- **Atomic writes.** Every write goes to a temp file in the same directory,
+  is `fsync`'d, and renamed into place, so a reader never sees a half-written
+  file.
+- **Backup before overwrite.** Saving an edited memory file first copies the
+  current on-disk version into the trash.
+- **Change detection.** When you open a file to edit, ccmanager records its
+  mtime+size. If the file changed on disk before you save (e.g. Claude Code
+  edited it), you get a conflict warning and must confirm before overwriting.
+- **Active-session guard.** Deleting your most-recently-active session shows a
+  confirmation first.
+- **Auto memory is read-only.** Claude Code writes auto memory during sessions,
+  so ccmanager will *view and delete* those files but never edit them (the edit
+  routes return 403).
+- **The advisor never writes on its own.** It only proposes diffs; applying one
+  goes through the same backup + atomic-write path as a manual edit.
+
+---
+
+## The memory load-replay engine
+
+The heart of the Memory section is a **pure** function (`memory.Resolve`) that
+reproduces how Claude Code assembles memory for a working directory:
+filesystem in, an ordered structure with provenance out. Keeping it pure makes
+it straightforward to test against fixture trees.
+
+It mirrors Claude Code's documented resolution
+(<https://code.claude.com/docs/en/memory>):
+
+1. **Collect sources in load order**, broadest scope first so the most specific
+   instruction is read last:
+   - Managed policy (`/etc/claude-code/CLAUDE.md` on Linux), if present.
+   - User: `~/.claude/CLAUDE.md`, then user rules `~/.claude/rules/**/*.md`.
+   - Walk the filesystem from the root down to the working directory; at each
+     directory collect `CLAUDE.md`, then `CLAUDE.local.md`, then
+     `.claude/CLAUDE.md`, then `.claude/rules/**/*.md`. Directories closer to the
+     working dir are read after higher ones; within a directory `CLAUDE.local.md`
+     comes after `CLAUDE.md`; user rules come before project rules.
+   - A file that sits on both the user and project layers (e.g.
+     `~/.claude/CLAUDE.md` when the project is under your home dir) is loaded
+     once, at its broadest position.
+2. **Expand `@path` imports.** Paths resolve relative to the importing file,
+   recurse up to **4 hops**, stop on circular imports, skip imports inside
+   Markdown code spans and fenced code blocks (a backticked `` `@path` `` is
+   literal), and mark imports that resolve outside the project as *external
+   (approval-gated)*.
+3. **Mark conditional rules.** A rule with `paths:` frontmatter only applies to
+   matching files, so it is flagged conditional rather than always-on.
+   `claudeMdExcludes` glob patterns from settings flag excluded files.
+4. **Append auto memory.** Only the first **200 lines or 25 KB** (whichever comes
+   first) of `MEMORY.md` loads at session start; topic files are listed as
+   on-demand. The auto-memory directory is located from the project's git root.
+5. **Produce two renderings.** "What Claude sees" inlines imports and strips
+   block-level HTML comments (but preserves comments inside code fences, matching
+   Claude Code); "Raw" is the file exactly as on disk.
+
+Two UI surfaces use the engine: the per-project **resolved view** (pick a
+directory, see the ordered stack with provenance, both renderings, and the import
+graph) and the **global inventory** (every memory file on the machine, for
+cleanup across projects).
+
+---
+
+## Package layout and data model
+
+```
+ccmanager/
+├── main.go                 flags, config, launch-time purge + index, start server
+├── internal/
+│   ├── config/             resolve config root, app paths, claude binary, port
+│   ├── store/              SQLite: schema, migrations, queries, FTS5, trash + advisor cache
+│   ├── sessions/           defensive JSONL parse, scan, title/summary, indexer, transcript paging
+│   ├── memory/             the pure load-replay engine: resolve, import expansion, comment strip, auto memory
+│   ├── advisor/            static lint + claude print-mode client + diff generation
+│   ├── trash/              move-to-trash, backup-before-write, restore, 30-day purge
+│   ├── safeio/             atomic write, on-disk change detection
+│   └── server/             http handlers, htmx routes, html/template rendering
+└── web/                    (templates and static assets are embedded under internal/server)
+```
+
+The SQLite index (`<config-dir>/ccmanager/index.db`) holds:
+
+- **`sessions`** — one row per transcript: id, file path, project path (the `cwd`
+  recorded *inside* the transcript), display name, titles, message/file size,
+  last activity, and the first-message parent uuid for the resume/branch chain.
+- **`messages`** + **`messages_fts`** — one row per text-bearing message and an
+  FTS5 full-text index of their bodies, for cross-transcript search.
+- **`trash`** — the deletion manifest (kind, original path, trash path, deleted-at,
+  purge-after).
+- **`advisor_cache`** — cached LLM results keyed by a hash of the analyzed text,
+  so identical content isn't re-sent to `claude`.
+
+Sessions and message bodies are streamed from disk on demand for the transcript
+viewer; only metadata and the FTS index are stored, so the index stays small even
+with a large transcript history.
+
+---
+
+## The advisor
+
+The advisor has two layers.
+
+**Static lint** is always on, fully offline, and instant. It flags memory files
+over 200 lines, vague instructions (a small wordlist like "properly", "clean",
+"appropriate", "nicely"), duplicate/near-duplicate lines across files
+(contradiction candidates), and dead `@path` imports.
+
+**LLM analysis** is on demand. It shells out to your locally installed `claude`
+CLI in print mode, granting it **no tools**, so it can only analyze the text
+passed on stdin and cannot touch your filesystem:
+
+```
+claude -p --output-format json --tools "" --allowed-tools ""
+```
+
+It offers two analyses: rewrites of weak instructions, and semantic contradiction
+detection across the resolved stack. Each result is shown as a **diff you
+approve**; applying one goes through the normal safe-write path (backup + atomic
+write), and the advisor never writes on its own.
+
+If `claude` is missing, errors, or is not logged in, the advisor shows a clear
+banner and the static lint keeps working regardless.
+
+> Note: `--bare` is deliberately **not** passed. In Claude Code 2.1.187 that flag
+> suppresses subscription credential loading, so a logged-in user would still get
+> "Not logged in". The no-tools sandbox is provided entirely by the `--tools`
+> flags, not by `--bare`.
+
+---
+
+## Assumptions discovered about the on-disk format
+
+The JSONL/transcript layout is not a stable contract and shifts between Claude
+Code versions, so ccmanager confirms what it can at runtime and isolates its
+assumptions in a few places. These were verified against **Claude Code 2.1.186/187**:
+
+- **The working directory comes from the `cwd` recorded inside the transcript**,
+  never from decoding the `projects/<name>` folder name. (`sessions/scan.go`)
+- **There is no `summary` line type** in this version. A session's display name
+  comes from a `custom-title` envelope, then an `ai-title` envelope, then the
+  first non-meta user prompt. (`sessions/summary.go`, `sessions/scan.go`)
+- **`message` and `message.content` are polymorphic** — `message` may be an
+  object or a JSON string; `content` may be a string or a list of typed blocks.
+  The parser handles all of these and tolerates unknown/missing fields and a
+  truncated final line. (`sessions/parse.go`)
+- **No `sessions-index.json` exists**; the JSONL files are the source of truth.
+- **The headless `claude` envelope** is `{type:"result", is_error, result, ...}`;
+  the advisor reads `.result` and treats `is_error` (e.g. "Not logged in") as
+  unavailable. (`advisor/claude.go`)
+- **`modernc.org/sqlite` ships FTS5** with no build tag and no CGO, which is what
+  makes a pure-Go single binary with full-text search possible. (`store`)
+
+---
+
+## Tests
+
+The two subtle subsystems are covered by focused tests:
+
+- The **memory engine** has table-driven tests against fixture trees under
+  `internal/memory/testdata/`: nested `CLAUDE.md` files, a `.claude/rules/` file
+  with `paths:` frontmatter, a 4-hop import chain (with a 5th hop that must be
+  cut), a circular import, an external import, and a `@path` inside a code block.
+- The **JSONL parser** is tested for unknown fields, a missing field, a truncated
+  final line, and the polymorphic `message`/`content` shapes.
+
+Run them with:
+
+```sh
+PATH=/usr/local/go/bin:$PATH go test ./...
+```
+
+---
+
+## v1 limitations and non-goals
+
+The following are intentionally out of scope for v1; the code is structured so
+they can be added later, but they are not implemented:
+
+- Desktop-app and VS Code session stores (v1 reads the **CLI store only**).
+- A filesystem watcher — refresh is manual.
+- Usage/cost analytics.
+- Multi-machine sync.
+- A packaged desktop app.
+
+Editing is limited to `CLAUDE.md`, `CLAUDE.local.md`, and rules files; auto memory
+is view-and-delete only.

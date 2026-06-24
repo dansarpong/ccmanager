@@ -1,2 +1,3 @@
 /ccmanager
 *.tmp-*
+.playwright-mcp/
