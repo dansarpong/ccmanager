@@ -6,10 +6,10 @@
 
   <form class="dir-picker" method="get" action="/memory/resolve">
     <label>Working directory:
-      <input type="text" name="dir" value="{{.Dir}}" placeholder="/path/to/project" size="50">
+      <input id="dir-input" type="text" name="dir" value="{{.Dir}}" placeholder="/path/to/project" size="50">
     </label>
     <label>or pick:
-      <select name="dir" onchange="this.form.submit()">
+      <select onchange="if(this.value){document.getElementById('dir-input').value=this.value; this.form.submit();}">
         <option value="">— known projects —</option>
         {{range .Projects}}<option value="{{.}}" {{if eq . $.Dir}}selected{{end}}>{{.}}</option>{{end}}
       </select>
