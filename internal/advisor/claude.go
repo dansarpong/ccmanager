@@ -46,10 +46,11 @@ type cliRunner struct {
 }
 
 func (c cliRunner) run(ctx context.Context, stdin string) (resultEnvelope, error) {
+	// No --bare: it breaks subscription auth (you get "Not logged in" even when
+	// logged in). The no-tools sandbox comes from the --tools flags below.
 	args := []string{
 		"-p",
 		"--output-format", "json",
-		"--bare",
 		"--tools", "",
 		"--allowed-tools", "",
 	}
