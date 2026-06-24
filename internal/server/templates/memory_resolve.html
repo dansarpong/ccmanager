@@ -88,5 +88,21 @@
     <h2>Static lint</h2>
     {{template "_lint.html" .}}
   </section>
+
+  <section class="advisor">
+    <h2>Advisor <span class="muted">(LLM analysis — proposes only, you approve each change)</span></h2>
+    <div class="advisor-actions">
+      <button hx-post="/advisor/analyze" hx-vals='{"dir":"{{.Dir}}","kind":"rewrite"}'
+              hx-target="#advisor-results" hx-indicator="#advisor-spin">
+        Suggest rewrites
+      </button>
+      <button hx-post="/advisor/analyze" hx-vals='{"dir":"{{.Dir}}","kind":"contradiction"}'
+              hx-target="#advisor-results" hx-indicator="#advisor-spin">
+        Find contradictions
+      </button>
+      <span id="advisor-spin" class="htmx-indicator muted">analyzing…</span>
+    </div>
+    <div id="advisor-results"></div>
+  </section>
   {{end}}
 {{template "foot" .}}{{end}}

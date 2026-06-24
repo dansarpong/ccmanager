@@ -132,3 +132,11 @@ form.inline { display: inline; margin: 0; }
 
 .saved-banner { background: #2c3a2c; border: 1px solid #9ece6a; color: #c0e89a; padding: .5rem .75rem; border-radius: 6px; }
 .warn-banner { background: #3a2c2c; border: 1px solid #f7768e; color: #ffb0bd; padding: .6rem .8rem; border-radius: 6px; }
+
+.advisor-actions { display: flex; gap: .75rem; align-items: center; margin: .5rem 0; }
+.proposed-edit { border: 1px solid var(--border); border-radius: 8px; padding: .6rem .8rem; margin: .6rem 0; }
+.proposed-edit .path { word-break: break-all; }
+pre.diff { background: #1e1f26; border-radius: 6px; padding: .6rem; overflow: auto; max-height: 20rem; white-space: pre; }
+pre.diff { color: var(--text); }
+.htmx-indicator { opacity: 0; transition: opacity .2s; }
+.htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }

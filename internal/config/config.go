@@ -5,6 +5,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 )
 
@@ -15,6 +16,7 @@ type Config struct {
 	DataDir     string // ConfigRoot/ccmanager — this app's own state
 	TrashDir    string // DataDir/trash
 	DBPath      string // DataDir/index.db
+	ClaudeBin   string // path to the claude CLI ("" if not found on PATH)
 	Port        int
 }
 
@@ -36,9 +38,20 @@ func Resolve(port int) (Config, error) {
 		DataDir:     data,
 		TrashDir:    filepath.Join(data, "trash"),
 		DBPath:      filepath.Join(data, "index.db"),
+		ClaudeBin:   findClaude(),
 		Port:        port,
 	}
 	return cfg, nil
+}
+
+// findClaude locates the claude CLI on PATH. It returns "" if not found, in
+// which case the advisor's LLM analysis is unavailable (the static lint still
+// works).
+func findClaude() string {
+	if p, err := exec.LookPath("claude"); err == nil {
+		return p
+	}
+	return ""
 }
 
 // EnsureDataDirs creates the app's own directories (DataDir and TrashDir).
