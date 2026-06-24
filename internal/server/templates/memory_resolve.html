@@ -1,0 +1,91 @@
+{{define "memory_resolve.html"}}{{template "head" .}}
+  <section class="page-head">
+    <h1>Resolved memory</h1>
+    <a class="back" href="/memory">global inventory →</a>
+  </section>
+
+  <form class="dir-picker" method="get" action="/memory/resolve">
+    <label>Working directory:
+      <input type="text" name="dir" value="{{.Dir}}" placeholder="/path/to/project" size="50">
+    </label>
+    <label>or pick:
+      <select name="dir" onchange="this.form.submit()">
+        <option value="">— known projects —</option>
+        {{range .Projects}}<option value="{{.}}" {{if eq . $.Dir}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </label>
+    <button type="submit">Resolve</button>
+  </form>
+
+  {{if not .Dir}}
+  <p class="empty">Pick a working directory to see how Claude Code assembles memory for it.</p>
+  {{else if .Stack}}
+  {{with .Stack}}
+  <p class="muted">Resolved for <span class="mono">{{.Workdir}}</span> · config root <span class="mono">{{.ConfigRoot}}</span></p>
+
+  <section class="resolved">
+    <h2>Load order ({{len .Sources}} sources)</h2>
+    <p class="muted">Broadest scope first; the most specific instruction is read last.</p>
+    {{range .Sources}}
+    <article class="source {{if .Excluded}}excluded{{end}}">
+      <header>
+        <span class="order">#{{.Order}}</span>
+        <span class="layer layer-{{.Layer}}">{{.Layer}}</span>
+        <span class="mono path">{{.Path}}</span>
+        {{if .Conditional}}<span class="badge conditional" title="paths: {{.Paths}}">conditional</span>{{end}}
+        {{if .Excluded}}<span class="badge excluded">excluded</span>{{end}}
+        {{if .Err}}<span class="badge err">read error</span>{{end}}
+      </header>
+      {{if .Conditional}}<div class="paths">applies to: {{range .Paths}}<code>{{.}}</code> {{end}}</div>{{end}}
+      <details>
+        <summary>What Claude sees (imports expanded, comments stripped)</summary>
+        <pre>{{.Expanded}}</pre>
+      </details>
+      <details>
+        <summary>Raw (exactly on disk)</summary>
+        <pre>{{.Raw}}</pre>
+      </details>
+    </article>
+    {{end}}
+  </section>
+
+  {{if .ImportEdges}}
+  <section class="imports">
+    <h2>Import graph</h2>
+    <ul>
+      {{range .ImportEdges}}
+      <li>
+        <span class="mono">{{.From}}</span> → <span class="mono">{{.To}}</span>
+        {{if .External}}<span class="badge external">external</span>{{end}}
+        {{if .Circular}}<span class="badge err">circular</span>{{end}}
+        {{if .Missing}}<span class="badge err">missing</span>{{end}}
+      </li>
+      {{end}}
+    </ul>
+  </section>
+  {{end}}
+
+  {{with .AutoMemory}}
+  <section class="automemory">
+    <h2>Auto-memory <span class="badge readonly">view &amp; delete only</span></h2>
+    <p class="muted mono">{{.Dir}}</p>
+    {{if .Head}}
+    <details open>
+      <summary>MEMORY.md head (first 200 lines / 25&nbsp;KB{{if .Truncated}}, truncated{{end}})</summary>
+      <pre>{{.Head}}</pre>
+    </details>
+    {{end}}
+    {{if .TopicFiles}}
+    <p class="muted">Topic files (loaded on demand, not at session start):</p>
+    <ul>{{range .TopicFiles}}<li class="mono">{{.}}</li>{{end}}</ul>
+    {{end}}
+  </section>
+  {{end}}
+  {{end}}
+
+  <section class="lint">
+    <h2>Static lint</h2>
+    {{template "_lint.html" .}}
+  </section>
+  {{end}}
+{{template "foot" .}}{{end}}

@@ -1,0 +1,16 @@
+{{define "_lint.html"}}<div id="lint-results">
+  {{if .Findings}}
+  <ul class="findings">
+    {{range .Findings}}
+    <li class="finding sev-{{.Severity}}">
+      <span class="rule">{{.Rule}}</span>
+      <span class="mono loc">{{.File}}{{if .Line}}:{{.Line}}{{end}}</span>
+      <div class="msg">{{.Message}}</div>
+      {{if .Snippet}}<div class="snippet mono">{{.Snippet}}</div>{{end}}
+    </li>
+    {{end}}
+  </ul>
+  {{else}}
+  <p class="empty">No static-lint findings.</p>
+  {{end}}
+</div>{{end}}

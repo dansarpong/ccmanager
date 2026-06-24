@@ -45,6 +45,10 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /search", s.handleSearch)
 	mux.HandleFunc("POST /refresh", s.handleRefresh)
 
+	mux.HandleFunc("GET /memory", s.handleMemoryInventory)
+	mux.HandleFunc("GET /memory/resolve", s.handleMemoryResolve)
+	mux.HandleFunc("GET /memory/lint", s.handleMemoryLint)
+
 	return mux
 }
 
