@@ -1,10 +1,10 @@
 {{define "sessions.html"}}{{template "head" .}}
   <section class="page-head">
     <h1>Sessions</h1>
-    <form class="search" hx-get="/search" hx-target="#search-results" hx-trigger="submit, keyup changed delay:400ms from:input[name=q]">
+    <form class="search" hx-get="/search" hx-target="#search-results" hx-swap="outerHTML" hx-trigger="submit, keyup changed delay:400ms from:input[name=q]">
       <input type="search" name="q" placeholder="Full-text search across all transcripts…" autocomplete="off">
     </form>
-    <form method="post" action="/refresh" hx-post="/refresh" hx-target="#session-list" hx-include="[name=sort],[name=project]">
+    <form method="post" action="/refresh" hx-post="/refresh" hx-target="#session-list" hx-swap="outerHTML" hx-include="[name=sort],[name=project]">
       <button type="submit">Refresh index</button>
     </form>
   </section>
