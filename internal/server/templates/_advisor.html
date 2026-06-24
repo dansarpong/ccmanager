@@ -1,0 +1,40 @@
+{{define "_advisor.html"}}<div id="advisor-results">
+  {{if .Unavailable}}
+  <p class="warn-banner">{{.Unavailable}}</p>
+  {{else if eq .Kind "contradiction"}}
+    {{if .Contradictions}}
+    <h3>{{len .Contradictions}} possible contradiction(s)</h3>
+    <ul class="findings">
+      {{range .Contradictions}}
+      <li class="finding sev-warn">
+        <div class="msg">{{.Explanation}}</div>
+        <div class="snippet mono">{{.FileA}}: “{{.ClaimA}}”</div>
+        <div class="snippet mono">{{.FileB}}: “{{.ClaimB}}”</div>
+      </li>
+      {{end}}
+    </ul>
+    {{else}}
+    <p class="empty">No contradictions found.</p>
+    {{end}}
+  {{else}}
+    {{if .Edits}}
+    <h3>{{len .Edits}} proposed rewrite(s)</h3>
+    {{range .Edits}}
+    <div class="proposed-edit">
+      <div class="mono path">{{.File}}</div>
+      {{if .Reason}}<div class="muted">{{.Reason}}</div>{{end}}
+      <pre class="diff">{{.Diff}}</pre>
+      <form method="post" action="/advisor/apply">
+        <input type="hidden" name="file" value="{{.File}}">
+        <input type="hidden" name="original" value="{{.Original}}">
+        <input type="hidden" name="suggestion" value="{{.Suggestion}}">
+        <input type="hidden" name="dir" value="{{$.Dir}}">
+        <button type="submit">Apply this edit</button>
+      </form>
+    </div>
+    {{end}}
+    {{else}}
+    <p class="empty">No rewrite suggestions.</p>
+    {{end}}
+  {{end}}
+</div>{{end}}

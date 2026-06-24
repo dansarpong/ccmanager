@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"ccmanager/internal/advisor"
 	"ccmanager/internal/config"
 	"ccmanager/internal/sessions"
 	"ccmanager/internal/store"
@@ -16,10 +17,11 @@ import (
 
 // Server holds the dependencies shared by all handlers.
 type Server struct {
-	cfg   config.Config
-	store *store.Store
-	trash *trash.Trash
-	tmpl  *template.Template
+	cfg     config.Config
+	store   *store.Store
+	trash   *trash.Trash
+	advisor *advisor.Advisor
+	tmpl    *template.Template
 }
 
 // New builds a Server with its templates parsed.
@@ -28,7 +30,13 @@ func New(cfg config.Config, st *store.Store, tr *trash.Trash) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parsing templates: %w", err)
 	}
-	return &Server{cfg: cfg, store: st, trash: tr, tmpl: tmpl}, nil
+	return &Server{
+		cfg:     cfg,
+		store:   st,
+		trash:   tr,
+		advisor: advisor.NewAdvisor(cfg.ClaudeBin, st),
+		tmpl:    tmpl,
+	}, nil
 }
 
 // Routes returns the HTTP handler with all routes registered, using Go 1.22+
@@ -59,6 +67,9 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /trash", s.handleTrashList)
 	mux.HandleFunc("POST /trash/{id}/restore", s.handleTrashRestore)
 	mux.HandleFunc("POST /trash/empty", s.handleTrashEmpty)
+
+	mux.HandleFunc("POST /advisor/analyze", s.handleAdvisorAnalyze)
+	mux.HandleFunc("POST /advisor/apply", s.handleAdvisorApply)
 
 	return mux
 }

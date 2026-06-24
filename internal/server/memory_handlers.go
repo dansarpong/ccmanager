@@ -23,6 +23,12 @@ func (s *Server) memoryInput() memory.Input {
 	}
 }
 
+// resolveStackForDir resolves the memory stack for a directory using the
+// app's engine input. Shared by the memory and advisor handlers.
+func resolveStackForDir(s *Server, dir string) (*memory.ResolvedStack, error) {
+	return memory.Resolve(s.memoryInput(), dir)
+}
+
 // resolveDir returns the working directory to resolve memory for: the ?dir=
 // query if present, otherwise the most-recently-active session's project path.
 func (s *Server) resolveDir(r *http.Request) string {
