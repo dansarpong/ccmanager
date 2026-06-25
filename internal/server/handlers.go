@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"html/template"
+	"io/fs"
 	"net/http"
 	"strconv"
 	"strings"
@@ -70,6 +71,13 @@ func (s *Server) handleSessionDetail(w http.ResponseWriter, r *http.Request) {
 
 	page, err := sessions.ReadTranscript(se.FilePath, 0, 50)
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			// The transcript was deleted on disk after it was indexed. Prune
+			// the stale row so it stops showing in the list, then 404.
+			_ = s.store.DeleteSessionRows(se.SessionID)
+			http.NotFound(w, r)
+			return
+		}
 		s.fail(w, "reading transcript", err)
 		return
 	}
@@ -98,6 +106,11 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 	offset := atoiDefault(r.URL.Query().Get("offset"), 0)
 	page, err := sessions.ReadTranscript(se.FilePath, offset, 50)
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			_ = s.store.DeleteSessionRows(se.SessionID)
+			http.NotFound(w, r)
+			return
+		}
 		s.fail(w, "reading transcript", err)
 		return
 	}

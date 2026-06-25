@@ -15,12 +15,17 @@ type IndexResult struct {
 	Scanned int // files re-scanned (new or changed)
 	Skipped int // files unchanged since last index
 	Failed  int // files that errored (skipped, not fatal)
+	Pruned  int // indexed sessions whose transcript file no longer exists
 }
 
 // Index walks ProjectsDir/<project>/*.jsonl and (re-)indexes each file whose
 // mtime or size differs from what is stored. The first run indexes everything;
 // a refresh only re-scans changed files. A single unreadable or malformed file
 // is counted as failed and skipped, never aborting the whole run.
+//
+// Rows for transcripts that have disappeared from disk (e.g. deleted outside
+// ccmanager) are pruned, so the list never shows a session that 404s/500s when
+// opened.
 func Index(st *store.Store, cfg config.Config) (IndexResult, error) {
 	var res IndexResult
 
@@ -37,6 +42,7 @@ func Index(st *store.Store, cfg config.Config) (IndexResult, error) {
 		return res, fmt.Errorf("reading projects dir: %w", err)
 	}
 
+	seen := make(map[string]bool, len(known))
 	for _, projEntry := range entries {
 		if !projEntry.IsDir() {
 			continue
@@ -52,6 +58,7 @@ func Index(st *store.Store, cfg config.Config) (IndexResult, error) {
 				res.Failed++
 				continue
 			}
+			seen[path] = true
 			if prev, ok := known[path]; ok && prev.Mtime == info.ModTime().Unix() && prev.Size == info.Size() {
 				res.Skipped++
 				continue
@@ -73,6 +80,20 @@ func Index(st *store.Store, cfg config.Config) (IndexResult, error) {
 			}
 			res.Scanned++
 		}
+	}
+
+	// Prune any indexed session whose file was not seen on this walk. A stat
+	// error above leaves the file out of `seen`, so a transiently unreadable
+	// file would be pruned and re-indexed next run — acceptable, since the row
+	// would otherwise be unusable anyway.
+	for path, meta := range known {
+		if seen[path] {
+			continue
+		}
+		if err := st.DeleteSessionRowsByFile(path, meta.SessionID); err != nil {
+			return res, fmt.Errorf("pruning missing transcript %s: %w", path, err)
+		}
+		res.Pruned++
 	}
 	return res, nil
 }
