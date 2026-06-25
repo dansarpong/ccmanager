@@ -108,10 +108,11 @@ func (s *Store) DeleteSessionRows(sessionID string) error {
 	return nil
 }
 
-// IndexedFiles returns the mtime and size recorded for each indexed file,
-// keyed by file path, so the indexer can skip unchanged files.
+// IndexedFiles returns the change-detection metadata recorded for each indexed
+// file, keyed by file path, so the indexer can skip unchanged files and prune
+// rows whose file has disappeared.
 func (s *Store) IndexedFiles() (map[string]FileMeta, error) {
-	rows, err := s.db.Query(`SELECT file_path, file_mtime, file_size FROM sessions`)
+	rows, err := s.db.Query(`SELECT file_path, session_id, file_mtime, file_size FROM sessions`)
 	if err != nil {
 		return nil, fmt.Errorf("querying indexed files: %w", err)
 	}
@@ -120,7 +121,7 @@ func (s *Store) IndexedFiles() (map[string]FileMeta, error) {
 	for rows.Next() {
 		var path string
 		var m FileMeta
-		if err := rows.Scan(&path, &m.Mtime, &m.Size); err != nil {
+		if err := rows.Scan(&path, &m.SessionID, &m.Mtime, &m.Size); err != nil {
 			return nil, fmt.Errorf("scanning indexed file: %w", err)
 		}
 		out[path] = m
@@ -130,8 +131,22 @@ func (s *Store) IndexedFiles() (map[string]FileMeta, error) {
 
 // FileMeta is the change-detection key for a transcript file.
 type FileMeta struct {
-	Mtime int64
-	Size  int64
+	SessionID string
+	Mtime     int64
+	Size      int64
+}
+
+// DeleteSessionRowsByFile removes the index rows for a transcript that no longer
+// exists on disk. It deletes by session id when known, falling back to the file
+// path so a row with an empty session id is still cleaned up.
+func (s *Store) DeleteSessionRowsByFile(filePath, sessionID string) error {
+	if sessionID != "" {
+		return s.DeleteSessionRows(sessionID)
+	}
+	if _, err := s.db.Exec(`DELETE FROM sessions WHERE file_path = ?`, filePath); err != nil {
+		return fmt.Errorf("deleting session row by path %s: %w", filePath, err)
+	}
+	return nil
 }
 
 // ListSessions returns session summaries ordered by the given sort key.

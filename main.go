@@ -56,7 +56,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("initial index: %w", err)
 	}
-	log.Printf("indexed: %d scanned, %d unchanged, %d failed", res.Scanned, res.Skipped, res.Failed)
+	log.Printf("indexed: %d scanned, %d unchanged, %d pruned, %d failed", res.Scanned, res.Skipped, res.Pruned, res.Failed)
 
 	srv, err := server.New(cfg, st, tr)
 	if err != nil {
