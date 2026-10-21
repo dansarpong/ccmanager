@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"runtime"
+	"strings"
 
 	"ccmanager/internal/advisor"
 	"ccmanager/internal/memory"
@@ -70,7 +71,7 @@ func (s *Server) handleMemoryResolve(w http.ResponseWriter, r *http.Request) {
 		data["Stack"] = stack
 		data["Findings"] = advisor.Lint(stack)
 	}
-	s.render(w, "memory_resolve.html", data)
+	s.page(w, r, "memory_resolve.html", data)
 }
 
 func (s *Server) handleMemoryLint(w http.ResponseWriter, r *http.Request) {
@@ -93,10 +94,47 @@ func (s *Server) handleMemoryInventory(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, "scanning memory inventory", err)
 		return
 	}
-	data := map[string]any{
-		"Title":  "Memory inventory — ccmanager",
-		"Active": "memory",
-		"Items":  items,
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	kind := r.URL.Query().Get("kind")
+	open := r.URL.Query().Get("open")
+	terms := strings.Fields(q)
+
+	// Project paths are best effort: without them an auto-memory entry shows
+	// its encoded projects/ folder name instead.
+	dirs, _ := s.store.ProjectPathsByDir()
+	entries := []memoryEntry{}
+	readOnly := 0
+	for _, it := range items {
+		if it.ReadOnly {
+			readOnly++
+		}
+		e := newMemoryEntry(it)
+		if !matchesInventoryKind(it.Kind, kind) || !containsAll(it.Path+" "+e.Title, terms) {
+			continue
+		}
+		e.Open = e.ID == open
+		if it.ReadOnly {
+			folder := autoMemoryProject(s.cfg.ProjectsDir, it.Path)
+			e.Project = folder
+			if path, ok := dirs[folder]; ok {
+				e.Project = tildePath(path)
+			}
+		}
+		if e.SourceSessionID != "" {
+			_, err := s.store.GetSession(e.SourceSessionID)
+			e.SourceIndexed = err == nil
+		}
+		entries = append(entries, e)
 	}
-	s.render(w, "memory_inventory.html", data)
+	data := map[string]any{
+		"Title":    "Memory — ccmanager",
+		"Active":   "memory",
+		"Entries":  entries,
+		"Total":    len(items),
+		"ReadOnly": readOnly,
+		"Query":    q,
+		"Kind":     kind,
+		"Filtered": q != "" || kind != "",
+	}
+	s.page(w, r, "memory_inventory.html", data)
 }

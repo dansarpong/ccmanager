@@ -1,39 +1,54 @@
 {{define "session_detail.html"}}{{template "head" .}}
   {{with .Session}}
-  <section class="page-head">
-    <h1>{{.DisplayName}}</h1>
-    <a class="back" href="/sessions">← all sessions</a>
-  </section>
-  <dl class="meta">
-    <dt>Session ID</dt><dd class="mono">{{.SessionID}}</dd>
-    <dt>Project path</dt><dd class="mono">{{.ProjectPath}}</dd>
-    <dt>Last activity</dt><dd>{{prettyTime .LastActivity}}</dd>
-    <dt>Messages</dt><dd>{{.MessageCount}}</dd>
-    <dt>File size</dt><dd>{{humanSize .FileSize}}</dd>
-    {{if .CustomTitle}}<dt>Custom title</dt><dd>{{.CustomTitle}}</dd>{{end}}
-    {{if .AITitle}}<dt>AI title</dt><dd>{{.AITitle}}</dd>{{end}}
-    <dt>File</dt><dd class="mono">{{.FilePath}}</dd>
-  </dl>
-  <form method="post" action="/sessions/{{.SessionID}}/delete" class="inline"
-        onsubmit="return confirm('Move this session to the trash?')">
-    <button type="submit" class="danger">Delete (move to trash)</button>
-  </form>
+  <header class="page-header">
+    <h1 class="page-header__title">{{.DisplayName}}</h1>
+    <div class="page-header__meta">
+      {{template "status-badge" .}}
+      <span class="mono" title="Session ID">{{.SessionID}}</span>
+      {{with .ProjectPath}}<span class="mono" title="Project">{{tildePath .}}</span>{{end}}
+      <span>{{.MessageCount}} {{if eq .MessageCount 1}}message{{else}}messages{{end}}</span>
+      <span>Last active <time datetime="{{.LastActivity}}" title="{{prettyTime .LastActivity}}">{{relTime .LastActivity}}</time></span>
+    </div>
+    <div class="page-header__actions">
+      <button class="btn btn--secondary code-block__copy" type="button" data-copy="resume-cmd">
+        <svg class="icon icon--copy" aria-hidden="true"><use href="/static/icons.svg#i-copy"/></svg>
+        <svg class="icon icon--done" aria-hidden="true"><use href="/static/icons.svg#i-check"/></svg>
+        Copy resume command
+      </button>
+      <form method="post" action="/sessions/{{.SessionID}}/delete"
+            hx-post="/sessions/{{.SessionID}}/delete" hx-sync="this:drop"
+            hx-confirm="Move this session to the trash? You can restore it for 30 days.">
+        <button class="btn btn--ghost btn--danger" type="submit">{{template "icon" "i-trash"}}Move to trash</button>
+      </form>
+      <code id="resume-cmd" hidden>claude --resume {{.SessionID}}</code>
+    </div>
+  </header>
   {{end}}
 
-  {{with .Chain}}
-  {{if or .Parent .Children}}
-  <section class="chain">
-    <h2>Resume / branch chain</h2>
-    {{with .Parent}}<p>Resumed from: <a href="/sessions/{{.SessionID}}">{{.DisplayName}}</a></p>{{end}}
-    {{if .Children}}<p>Continued by:</p><ul>
-      {{range .Children}}<li><a href="/sessions/{{.SessionID}}">{{.DisplayName}}</a></li>{{end}}
-    </ul>{{end}}
-  </section>
-  {{end}}
-  {{end}}
+  <div class="page-body">
+    <div class="section-head"><h2>Details</h2></div>
+    <dl class="meta-grid">
+      {{with .Session}}
+      <dt>Transcript</dt><dd class="mono">{{.FilePath}}</dd>
+      <dt>File size</dt><dd>{{humanSize .FileSize}}</dd>
+      {{with .CustomTitle}}<dt>Custom title</dt><dd>{{.}}</dd>{{end}}
+      {{with .AITitle}}<dt>AI title</dt><dd>{{.}}</dd>{{end}}
+      {{end}}
+      {{with .Chain}}
+      {{with .Parent}}<dt>Resumed from</dt><dd><a href="/sessions/{{.SessionID}}">{{.DisplayName}}</a></dd>{{end}}
+      {{range $i, $c := .Children}}<dt>{{if not $i}}Continued by{{end}}</dt><dd><a href="/sessions/{{$c.SessionID}}">{{$c.DisplayName}}</a></dd>{{end}}
+      {{end}}
+    </dl>
 
-  <section class="transcript">
-    <h2>Transcript</h2>
-    {{template "_transcript.html" .}}
-  </section>
+    <div class="section-head"><h2>Transcript</h2></div>
+    {{if .Page.Total}}
+    {{template "transcript" .}}
+    {{else}}
+    <div class="empty-state">
+      <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-sessions"/></svg>
+      <h2 class="empty-state__title">No text messages in this transcript</h2>
+      <p class="empty-state__text">The transcript shows user and assistant messages that carry text, and this file has none.</p>
+    </div>
+    {{end}}
+  </div>
 {{template "foot" .}}{{end}}

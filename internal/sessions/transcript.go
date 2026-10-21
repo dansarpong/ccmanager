@@ -9,7 +9,8 @@ import (
 
 // TranscriptMessage is one rendered message for the transcript viewer.
 type TranscriptMessage struct {
-	Role      string
+	Index     int    // 1-based position among the transcript's text messages
+	Role      string // "user", "assistant", or "tool" for tool calls and results
 	Timestamp string
 	Text      string
 }
@@ -46,14 +47,19 @@ func ReadTranscript(path string, offset, limit int) (TranscriptPage, error) {
 		if l.Type != "user" && l.Type != "assistant" {
 			return
 		}
-		role, text := roleAndText(l.Message)
+		role, text, toolOnly := messageContent(l.Message)
 		if text == "" {
 			return
 		}
 		page.Total++
 		if idx >= offset && len(page.Messages) < limit {
+			role = orRole(role, l.Type)
+			if toolOnly {
+				role = "tool"
+			}
 			page.Messages = append(page.Messages, TranscriptMessage{
-				Role:      orRole(role, l.Type),
+				Index:     idx + 1,
+				Role:      role,
 				Timestamp: l.Timestamp,
 				Text:      text,
 			})

@@ -1,31 +1,51 @@
 {{define "sessions.html"}}{{template "head" .}}
-  <section class="page-head">
-    <h1>Sessions</h1>
-    <form class="search" hx-get="/search" hx-target="#search-results" hx-swap="outerHTML" hx-trigger="submit, keyup changed delay:400ms from:input[name=q]">
-      <input type="search" name="q" placeholder="Full-text search across all transcripts…" autocomplete="off">
-    </form>
-    <form method="post" action="/refresh" hx-post="/refresh" hx-target="#session-list" hx-swap="outerHTML" hx-include="[name=sort],[name=project]">
-      <button type="submit">Refresh index</button>
-    </form>
-  </section>
+  <header class="page-header">
+    <h1 class="page-header__title">Sessions</h1>
+    <div class="page-header__meta">
+      <span id="session-count">{{len .Sessions}} {{if eq (len .Sessions) 1}}session{{else}}sessions{{end}}</span>
+      {{with .Project}}<span class="mono">{{tildePath .}}</span>{{end}}
+    </div>
+    <div class="page-header__actions">
+      <button class="btn btn--secondary" type="button"
+              hx-post="/refresh" hx-include="[name=sort],[name=project],[name=status]"
+              hx-target="#session-list" hx-select="#session-list > *" hx-swap="innerHTML"
+              hx-indicator="#session-list" hx-sync="this:drop">
+        {{template "icon" "i-refresh"}}Refresh index
+      </button>
+    </div>
+  </header>
 
-  <div id="search-results"></div>
-
-  <form class="filters" hx-get="/sessions" hx-target="#session-list" hx-select="#session-list" hx-swap="outerHTML" hx-trigger="change">
-    <label>Sort:
-      <select name="sort">
-        <option value="activity" {{if eq .Sort "activity"}}selected{{end}}>Last activity</option>
-        <option value="size" {{if eq .Sort "size"}}selected{{end}}>File size</option>
-        <option value="count" {{if eq .Sort "count"}}selected{{end}}>Message count</option>
-      </select>
+  <div class="toolbar">
+    {{/* The sidebar's project links set the filter; this carries it into sort, status and refresh requests. */}}
+    <input type="hidden" name="project" value="{{.Project}}">
+    <label class="field" id="search-field">
+      {{template "icon" "i-search"}}
+      <input class="input" type="text" name="q" placeholder="Search transcripts" aria-label="Search transcripts" autocomplete="off"
+             hx-get="/search" hx-trigger="input changed delay:300ms"
+             hx-target="#search-results" hx-select="#search-results > *" hx-swap="innerHTML"
+             hx-sync="this:replace" hx-indicator="#search-field, #search-results">
+      <span class="spinner htmx-indicator" aria-hidden="true"></span>
     </label>
-    <label>Project:
-      <select name="project">
-        <option value="">All projects</option>
-        {{range .Projects}}<option value="{{.}}" {{if eq . $.Project}}selected{{end}}>{{.}}</option>{{end}}
-      </select>
-    </label>
-  </form>
+    <select class="select" name="sort" aria-label="Sort"
+            hx-get="/sessions" hx-include="[name=sort],[name=project],[name=status]"
+            hx-target="#session-list" hx-select="#session-list > *" hx-select-oob="#session-count"
+            hx-swap="innerHTML" hx-indicator="#session-list">
+      <option value="activity"{{if eq .Sort "activity"}} selected{{end}}>Last active</option>
+      <option value="count"{{if eq .Sort "count"}} selected{{end}}>Message count</option>
+      <option value="size"{{if eq .Sort "size"}} selected{{end}}>File size</option>
+    </select>
+    <select class="select" name="status" aria-label="Status"
+            hx-get="/sessions" hx-include="[name=sort],[name=project],[name=status]"
+            hx-target="#session-list" hx-select="#session-list > *" hx-select-oob="#session-count"
+            hx-swap="innerHTML" hx-indicator="#session-list">
+      <option value="">All statuses</option>
+      <option value="active"{{if eq .Status "active"}} selected{{end}}>Active</option>
+      <option value="idle"{{if eq .Status "idle"}} selected{{end}}>Idle</option>
+    </select>
+  </div>
 
-  {{template "_session_list.html" .}}
+  <div class="page-body">
+    <div class="swap-region" id="search-results"></div>
+    {{template "session-list" .}}
+  </div>
 {{template "foot" .}}{{end}}

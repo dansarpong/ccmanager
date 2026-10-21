@@ -53,6 +53,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /sessions/{id}", s.handleSessionDetail)
 	mux.HandleFunc("GET /sessions/{id}/transcript", s.handleTranscript)
 	mux.HandleFunc("GET /search", s.handleSearch)
+	mux.HandleFunc("GET /palette", s.handlePalette)
 	mux.HandleFunc("POST /refresh", s.handleRefresh)
 
 	mux.HandleFunc("GET /memory", s.handleMemoryInventory)
@@ -62,6 +63,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /memory/save", s.handleMemorySave)
 	mux.HandleFunc("POST /memory/delete", s.handleMemoryDelete)
 
+	mux.HandleFunc("GET /sessions/{id}/delete", s.handleSessionDeleteConfirm)
 	mux.HandleFunc("POST /sessions/{id}/delete", s.handleSessionDelete)
 
 	mux.HandleFunc("GET /trash", s.handleTrashList)

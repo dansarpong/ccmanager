@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-sessions" viewBox="0 0 16 16"><rect x="1.75" y="2.75" width="12.5" height="10.5" rx="2"/><path d="M4.75 6.25 6.75 8l-2 1.75M8.5 10h2.75"/></symbol>
+  <symbol id="i-memory" viewBox="0 0 16 16"><path d="M3.75 1.75h5.5l3 3v9.5h-8.5z"/><path d="M9.25 1.75v3h3M6 8.25h4M6 10.75h2.5"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 16 16"><path d="M2.75 4.25h10.5M6.25 4.25v-1.5h3.5v1.5M4 4.25l.6 9h6.8l.6-9M6.75 7v3.5M9.25 7v3.5"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 16 16"><path d="M1.75 4.25c0-.83.67-1.5 1.5-1.5h2.9l1.6 1.75h5c.83 0 1.5.67 1.5 1.5v5.75c0 .83-.67 1.5-1.5 1.5h-9.5c-.83 0-1.5-.67-1.5-1.5z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.25"/><path d="m10.25 10.25 3 3"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 16 16"><path d="M13.25 8A5.25 5.25 0 1 1 11.7 4.3M13.25 2.75v2.5h-2.5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5.25" y="5.25" width="8" height="8" rx="1.5"/><path d="M10.75 5.25V3.5a.75.75 0 0 0-.75-.75H3.5a.75.75 0 0 0-.75.75V10c0 .41.34.75.75.75h1.75"/></symbol>
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.25 8.5 3 3 6.5-7"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 16 16"><path d="m10.25 2.75 3 3-7.5 7.5h-3v-3z"/><path d="m8.75 4.25 3 3"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 16 16"><path d="m6 3.75 4.25 4.25L6 12.25"/></symbol>
+  <symbol id="i-command" viewBox="0 0 16 16"><path d="M5.5 5.5h5v5h-5zM5.5 5.5V4a1.5 1.5 0 1 0-1.5 1.5h1.5zM10.5 5.5H12A1.5 1.5 0 1 0 10.5 4v1.5zM5.5 10.5H4A1.5 1.5 0 1 0 5.5 12v-1.5zM10.5 10.5V12a1.5 1.5 0 1 0 1.5-1.5h-1.5z"/></symbol>
+</svg>

@@ -1,40 +1,74 @@
-{{define "_advisor.html"}}<div id="advisor-results">
+{{define "_advisor.html"}}<div class="swap-region" id="advisor-results">
   {{if .Unavailable}}
-  <p class="warn-banner">{{.Unavailable}}</p>
+  <div class="empty-state">
+    <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-check"/></svg>
+    <h2 class="empty-state__title">Advisor unavailable</h2>
+    <p class="empty-state__text">{{.Unavailable}}</p>
+  </div>
   {{else if eq .Kind "contradiction"}}
     {{if .Contradictions}}
-    <h3>{{len .Contradictions}} possible contradiction(s)</h3>
-    <ul class="findings">
-      {{range .Contradictions}}
-      <li class="finding sev-warn">
-        <div class="msg">{{.Explanation}}</div>
-        <div class="snippet mono">{{.FileA}}: “{{.ClaimA}}”</div>
-        <div class="snippet mono">{{.FileB}}: “{{.ClaimB}}”</div>
+    <ul class="memory-list">
+      <li class="session-list__head">{{len .Contradictions}} possible {{if eq (len .Contradictions) 1}}contradiction{{else}}contradictions{{end}}</li>
+      {{range $i, $c := .Contradictions}}
+      <li class="memory-entry swap-in" id="contradiction-{{$i}}">
+        <details open>
+          <summary class="memory-entry__summary">
+            <svg class="icon memory-entry__chevron" aria-hidden="true"><use href="/static/icons.svg#i-chevron"/></svg>
+            <span class="memory-entry__title" title="{{$c.Explanation}}">{{$c.Explanation}}</span>
+            <span class="memory-entry__meta">
+              <span class="mono">{{tildePath $c.FileA}}</span>
+              <span class="mono">{{tildePath $c.FileB}}</span>
+            </span>
+          </summary>
+          <div class="memory-entry__body">
+            <dl class="meta-grid">
+              <dt class="mono">{{tildePath $c.FileA}}</dt><dd>“{{$c.ClaimA}}”</dd>
+              <dt class="mono">{{tildePath $c.FileB}}</dt><dd>“{{$c.ClaimB}}”</dd>
+            </dl>
+          </div>
+        </details>
       </li>
       {{end}}
     </ul>
     {{else}}
-    <p class="empty">No contradictions found.</p>
+    <div class="empty-state">
+      <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-check"/></svg>
+      <h2 class="empty-state__title">No contradictions found</h2>
+      <p class="empty-state__text">The advisor found no instructions in this stack that disagree.</p>
+    </div>
     {{end}}
   {{else}}
     {{if .Edits}}
-    <h3>{{len .Edits}} proposed rewrite(s)</h3>
-    {{range .Edits}}
-    <div class="proposed-edit">
-      <div class="mono path">{{.File}}</div>
-      {{if .Reason}}<div class="muted">{{.Reason}}</div>{{end}}
-      <pre class="diff">{{.Diff}}</pre>
-      <form method="post" action="/advisor/apply">
-        <input type="hidden" name="file" value="{{.File}}">
-        <input type="hidden" name="original" value="{{.Original}}">
-        <input type="hidden" name="suggestion" value="{{.Suggestion}}">
-        <input type="hidden" name="dir" value="{{$.Dir}}">
-        <button type="submit">Apply this edit</button>
-      </form>
-    </div>
-    {{end}}
+    <ul class="memory-list">
+      <li class="session-list__head">{{len .Edits}} proposed {{if eq (len .Edits) 1}}rewrite{{else}}rewrites{{end}}</li>
+      {{range $i, $e := .Edits}}
+      <li class="memory-entry swap-in" id="edit-{{$i}}">
+        <details open>
+          <summary class="memory-entry__summary">
+            <svg class="icon memory-entry__chevron" aria-hidden="true"><use href="/static/icons.svg#i-chevron"/></svg>
+            <span class="memory-entry__title mono" title="{{$e.File}}">{{tildePath $e.File}}</span>
+            {{with $e.Reason}}<span class="memory-entry__preview">{{.}}</span>{{end}}
+          </summary>
+          <div class="memory-entry__body">
+            {{template "code-block" (diffBlock (printf "edit-%d-diff" $i) (tildePath $e.File) $e.Diff)}}
+            <form method="post" action="/advisor/apply">
+              <input type="hidden" name="file" value="{{$e.File}}">
+              <input type="hidden" name="original" value="{{$e.Original}}">
+              <input type="hidden" name="suggestion" value="{{$e.Suggestion}}">
+              <input type="hidden" name="dir" value="{{$.Dir}}">
+              <button class="btn btn--secondary" type="submit">{{template "icon" "i-check"}}Apply this edit</button>
+            </form>
+          </div>
+        </details>
+      </li>
+      {{end}}
+    </ul>
     {{else}}
-    <p class="empty">No rewrite suggestions.</p>
+    <div class="empty-state">
+      <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-check"/></svg>
+      <h2 class="empty-state__title">No rewrites suggested</h2>
+      <p class="empty-state__text">The advisor found nothing in this stack it would change.</p>
+    </div>
     {{end}}
   {{end}}
 </div>{{end}}

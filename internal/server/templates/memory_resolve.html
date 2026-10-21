@@ -1,108 +1,137 @@
 {{define "memory_resolve.html"}}{{template "head" .}}
-  <section class="page-head">
-    <h1>Resolved memory</h1>
-    <a class="back" href="/memory">global inventory →</a>
-  </section>
+  <header class="page-header">
+    <h1 class="page-header__title">Resolved memory</h1>
+    <div class="page-header__meta">
+      {{with .Stack}}
+      <span>For <span class="mono">{{tildePath .Workdir}}</span></span>
+      <span>{{len .Sources}} {{if eq (len .Sources) 1}}source{{else}}sources{{end}}, broadest first</span>
+      <span>Config root <span class="mono">{{tildePath .ConfigRoot}}</span></span>
+      {{else}}
+      <span>How Claude Code assembles memory for a working directory</span>
+      {{end}}
+    </div>
+    <div class="page-header__actions">
+      <a class="btn btn--ghost" href="/memory">{{template "icon" "i-memory"}}Memory inventory</a>
+    </div>
+  </header>
 
-  <form class="dir-picker" method="get" action="/memory/resolve">
-    <label>Working directory:
-      <input id="dir-input" type="text" name="dir" value="{{.Dir}}" placeholder="/path/to/project" size="50">
+  <form class="toolbar" method="get" action="/memory/resolve">
+    <label class="field">
+      {{template "icon" "i-folder"}}
+      <input class="input" id="dir-input" type="text" name="dir" value="{{.Dir}}" placeholder="Working directory" aria-label="Working directory">
     </label>
-    <label>or pick:
-      <select onchange="if(this.value){document.getElementById('dir-input').value=this.value; this.form.submit();}">
-        <option value="">— known projects —</option>
-        {{range .Projects}}<option value="{{.}}" {{if eq . $.Dir}}selected{{end}}>{{.}}</option>{{end}}
-      </select>
-    </label>
-    <button type="submit">Resolve</button>
+    {{/* No name on the select: it copies its choice into #dir-input, so only one dir is submitted. */}}
+    <select class="select" aria-label="Known projects"
+            onchange="if(this.value){document.getElementById('dir-input').value=this.value; this.form.submit();}">
+      <option value="">Known projects</option>
+      {{range .Projects}}<option value="{{.}}"{{if eq . $.Dir}} selected{{end}}>{{tildePath .}}</option>{{end}}
+    </select>
+    <button class="btn btn--secondary" type="submit">Resolve</button>
   </form>
 
+  <div class="page-body">
   {{if not .Dir}}
-  <p class="empty">Pick a working directory to see how Claude Code assembles memory for it.</p>
+    <div class="empty-state">
+      <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-folder"/></svg>
+      <h2 class="empty-state__title">No directory picked</h2>
+      <p class="empty-state__text">Pick a working directory to see how Claude Code assembles memory for it.</p>
+    </div>
   {{else if .Stack}}
-  {{with .Stack}}
-  <p class="muted">Resolved for <span class="mono">{{.Workdir}}</span> · config root <span class="mono">{{.ConfigRoot}}</span></p>
-
-  <section class="resolved">
-    <h2>Load order ({{len .Sources}} sources)</h2>
-    <p class="muted">Broadest scope first; the most specific instruction is read last.</p>
-    {{range .Sources}}
-    <article class="source {{if .Excluded}}excluded{{end}}">
-      <header>
-        <span class="order">#{{.Order}}</span>
-        <span class="layer layer-{{.Layer}}">{{.Layer}}</span>
-        <span class="mono path">{{.Path}}</span>
-        {{if .Conditional}}<span class="badge conditional" title="paths: {{.Paths}}">conditional</span>{{end}}
-        {{if .Excluded}}<span class="badge excluded">excluded</span>{{end}}
-        {{if .Err}}<span class="badge err">read error</span>{{end}}
-        <a class="edit-link" href="/memory/edit?path={{.Path}}">edit</a>
-      </header>
-      {{if .Conditional}}<div class="paths">applies to: {{range .Paths}}<code>{{.}}</code> {{end}}</div>{{end}}
-      <details>
-        <summary>What Claude sees (imports expanded, comments stripped)</summary>
-        <pre>{{.Expanded}}</pre>
-      </details>
-      <details>
-        <summary>Raw (exactly on disk)</summary>
-        <pre>{{.Raw}}</pre>
-      </details>
-    </article>
-    {{end}}
-  </section>
-
-  {{if .ImportEdges}}
-  <section class="imports">
-    <h2>Import graph</h2>
-    <ul>
-      {{range .ImportEdges}}
-      <li>
-        <span class="mono">{{.From}}</span> → <span class="mono">{{.To}}</span>
-        {{if .External}}<span class="badge external">external</span>{{end}}
-        {{if .Circular}}<span class="badge err">circular</span>{{end}}
-        {{if .Missing}}<span class="badge err">missing</span>{{end}}
+    {{with .Stack}}
+    <div class="section-head"><h2>Load order</h2></div>
+    {{if .Sources}}
+    <ul class="memory-list">
+      {{range .Sources}}
+      <li class="memory-entry" id="source-{{.Order}}">
+        <details>
+          <summary class="memory-entry__summary">
+            <svg class="icon memory-entry__chevron" aria-hidden="true"><use href="/static/icons.svg#i-chevron"/></svg>
+            <span class="memory-entry__title mono" title="{{.Path}}">{{tildePath .Path}}</span>
+            <span class="memory-entry__meta">
+              <span>Loads {{add .Order 1}}</span>
+              <span class="mono">{{.Layer}}</span>
+              {{if .Conditional}}<span class="badge">Conditional</span>{{end}}
+              {{if .Excluded}}<span class="badge">Excluded</span>{{end}}
+              {{if .Err}}<span class="badge">Read error</span>{{end}}
+            </span>
+            {{if .Conditional}}<span class="memory-entry__preview">Applies to {{range $i, $p := .Paths}}{{if $i}}, {{end}}<code>{{$p}}</code>{{end}}</span>{{end}}
+          </summary>
+          <div class="memory-entry__body">
+            {{with .Err}}<p>Could not read this file: {{.}}</p>{{end}}
+            <h3>What Claude sees: imports inlined, comments stripped</h3>
+            {{template "code-block" (codeBlock (printf "source-%d-seen" .Order) (tildePath .Path) .Expanded)}}
+            <h3>Raw, exactly as on disk</h3>
+            {{template "code-block" (codeBlock (printf "source-%d-raw" .Order) (tildePath .Path) .Raw)}}
+          </div>
+        </details>
+        <div class="memory-entry__actions">
+          <a class="btn btn--ghost btn--icon" href="/memory/edit?path={{.Path}}" aria-label="Edit" title="Edit">{{template "icon" "i-edit"}}</a>
+        </div>
       </li>
       {{end}}
     </ul>
-  </section>
-  {{end}}
-
-  {{with .AutoMemory}}
-  <section class="automemory">
-    <h2>Auto-memory <span class="badge readonly">view &amp; delete only</span></h2>
-    <p class="muted mono">{{.Dir}}</p>
-    {{if .Head}}
-    <details open>
-      <summary>MEMORY.md head (first 200 lines / 25&nbsp;KB{{if .Truncated}}, truncated{{end}})</summary>
-      <pre>{{.Head}}</pre>
-    </details>
+    {{else}}
+    <div class="empty-state">
+      <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-memory"/></svg>
+      <h2 class="empty-state__title">No memory files load here</h2>
+      <p class="empty-state__text">Add a CLAUDE.md to this directory or a parent, or a rule under .claude/rules/.</p>
+    </div>
     {{end}}
-    {{if .TopicFiles}}
-    <p class="muted">Topic files (loaded on demand, not at session start):</p>
-    <ul>{{range .TopicFiles}}<li class="mono">{{.}}</li>{{end}}</ul>
-    {{end}}
-  </section>
-  {{end}}
-  {{end}}
 
-  <section class="lint">
-    <h2>Static lint</h2>
+    {{if .ImportEdges}}
+    <div class="section-head"><h2>Import graph</h2></div>
+    <dl class="meta-grid">
+      {{range .ImportEdges}}
+      <dt class="mono">{{tildePath .From}}</dt>
+      <dd>
+        <span class="mono">{{tildePath .To}}</span>
+        {{if .External}}<span class="badge">External</span>{{end}}
+        {{if .Circular}}<span class="badge">Circular</span>{{end}}
+        {{if .Missing}}<span class="badge">Missing</span>{{end}}
+      </dd>
+      {{end}}
+    </dl>
+    {{end}}
+
+    {{with .AutoMemory}}
+    <div class="section-head"><h2>Auto memory</h2><span class="badge">Read-only</span></div>
+    <dl class="meta-grid">
+      <dt>Directory</dt><dd class="mono">{{tildePath .Dir}}</dd>
+      <dt>Loaded at start</dt><dd>First 200 lines or 25 KB of MEMORY.md{{if .Truncated}}; this file is longer, so the rest is cut{{end}}</dd>
+      {{range $i, $f := .TopicFiles}}<dt>{{if not $i}}On demand{{end}}</dt><dd class="mono">{{tildePath $f}}</dd>{{end}}
+      {{with .Err}}<dt>Error</dt><dd>{{.}}</dd>{{end}}
+    </dl>
+    {{if .Head}}{{template "code-block" (codeBlock "automemory-head" (tildePath .MemoryMDPath) .Head)}}{{end}}
+    {{end}}
+    {{end}}
+
+    <div class="section-head"><h2>Static lint</h2></div>
     {{template "_lint.html" .}}
-  </section>
 
-  <section class="advisor">
-    <h2>Advisor <span class="muted">(LLM analysis — proposes only, you approve each change)</span></h2>
-    <div class="advisor-actions">
-      <button hx-post="/advisor/analyze" hx-vals='{"dir":"{{.Dir}}","kind":"rewrite"}'
-              hx-target="#advisor-results" hx-swap="outerHTML" hx-indicator="#advisor-spin">
-        Suggest rewrites
+    <div class="section-head" id="advisor-head">
+      <h2>Advisor</h2>
+      <input type="hidden" id="advisor-dir" name="dir" value="{{.Dir}}">
+      <button class="btn btn--secondary" type="button"
+              hx-post="/advisor/analyze" hx-include="#advisor-dir" hx-vals='{"kind":"rewrite"}'
+              hx-target="#advisor-results" hx-select="#advisor-results > *" hx-swap="innerHTML"
+              hx-indicator="#advisor-head, #advisor-results" hx-sync="#advisor-head:drop">
+        {{template "icon" "i-check"}}Suggest rewrites
       </button>
-      <button hx-post="/advisor/analyze" hx-vals='{"dir":"{{.Dir}}","kind":"contradiction"}'
-              hx-target="#advisor-results" hx-swap="outerHTML" hx-indicator="#advisor-spin">
+      <button class="btn btn--secondary" type="button"
+              hx-post="/advisor/analyze" hx-include="#advisor-dir" hx-vals='{"kind":"contradiction"}'
+              hx-target="#advisor-results" hx-select="#advisor-results > *" hx-swap="innerHTML"
+              hx-indicator="#advisor-head, #advisor-results" hx-sync="#advisor-head:drop">
         Find contradictions
       </button>
-      <span id="advisor-spin" class="htmx-indicator muted">analyzing…</span>
+      <span class="spinner htmx-indicator" aria-hidden="true"></span>
     </div>
-    <div id="advisor-results"></div>
-  </section>
+    <div class="swap-region" id="advisor-results">
+      <div class="empty-state">
+        <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-check"/></svg>
+        <h2 class="empty-state__title">No analysis yet</h2>
+        <p class="empty-state__text">The advisor sends this stack to claude and proposes rewrites or flags contradictions. Nothing changes until you apply an edit.</p>
+      </div>
+    </div>
   {{end}}
+  </div>
 {{template "foot" .}}{{end}}

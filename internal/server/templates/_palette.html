@@ -1,0 +1,41 @@
+{{define "palette"}}
+<dialog class="palette" id="palette" aria-label="Command palette" closedby="any">
+  <div class="palette__field">
+    {{template "icon" "i-search"}}
+    <input class="palette__input" id="palette-input" type="text" name="q" autocomplete="off" spellcheck="false" autofocus
+           placeholder="Search sessions, memory and commands"
+           role="combobox" aria-expanded="true" aria-controls="palette-results" aria-autocomplete="list"
+           hx-get="/palette" hx-trigger="input changed delay:150ms" hx-target="#palette-results"
+           hx-sync="this:replace" hx-indicator="#palette">
+    <span class="spinner htmx-indicator" aria-hidden="true"></span>
+    <kbd class="kbd">esc</kbd>
+  </div>
+  <div class="palette__results swap-region" id="palette-results" role="listbox" aria-label="Results">
+    {{template "palette-results" .}}
+  </div>
+  <footer class="palette__footer">
+    <span class="palette__hint"><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> Navigate</span>
+    <span class="palette__hint"><kbd class="kbd">↵</kbd> Open</span>
+    <span class="palette__hint"><kbd class="kbd">esc</kbd> Close</span>
+  </footer>
+</dialog>
+{{end}}
+
+{{define "palette-results"}}
+{{range .Groups}}
+<div class="palette__group" role="group" aria-labelledby="pg-{{.Key}}">
+  <div class="palette__group-label" id="pg-{{.Key}}">{{.Label}}</div>
+  {{range .Items}}
+  <a class="palette-item" id="opt-{{.ID}}" role="option" tabindex="-1" href="{{.Href}}"
+     aria-selected="false"{{if .Disabled}} aria-disabled="true"{{end}}>
+    {{template "icon" .Icon}}
+    <span class="palette-item__label">{{.LabelHTML}}</span>
+    {{with .Meta}}<span class="palette-item__meta">{{.}}</span>{{end}}
+    <kbd class="kbd palette-item__key">↵</kbd>
+  </a>
+  {{end}}
+</div>
+{{else}}
+<p class="palette__empty">No matches for “{{.Query}}”.</p>
+{{end}}
+{{end}}

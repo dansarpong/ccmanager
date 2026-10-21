@@ -1,18 +1,26 @@
 {{define "memory_edit.html"}}{{template "head" .}}
-  <section class="page-head">
-    <h1>Edit memory file</h1>
-    <a class="back" href="/memory">← inventory</a>
-  </section>
-  <p class="mono muted">{{.Path}}</p>
-  {{if .Saved}}<p class="saved-banner">Saved. A backup of the previous version is in the trash.</p>{{end}}
-
-  <form method="post" action="/memory/save" class="editor">
-    <input type="hidden" name="path" value="{{.Path}}">
-    <input type="hidden" name="token" value="{{.Token}}">
-    <textarea name="content" rows="28" spellcheck="false">{{.Content}}</textarea>
-    <div class="editor-actions">
-      <button type="submit">Save</button>
-      <a class="back" href="/memory/resolve">cancel</a>
+  <header class="page-header">
+    <h1 class="page-header__title">Edit memory file</h1>
+    <div class="page-header__meta">
+      <span class="mono">{{.Path}}</span>
+      {{if .Saved}}<span>Saved. The previous version is backed up in the trash.</span>{{end}}
     </div>
-  </form>
+    <div class="page-header__actions">
+      <a class="btn btn--ghost" href="/memory">Back to memory</a>
+      <button class="btn btn--primary" type="submit" form="editor">Save changes</button>
+    </div>
+  </header>
+
+  <div class="page-body">
+    <form id="editor" method="post" action="/memory/save">
+      <input type="hidden" name="path" value="{{.Path}}">
+      <input type="hidden" name="token" value="{{.Token}}">
+      {{template "editor-textarea" .}}
+    </form>
+  </div>
 {{template "foot" .}}{{end}}
+
+{{/* The system has no multi-line field: .input fixes its height to one control
+     row, so the editor overrides height and padding inline with tokens. */}}
+{{define "editor-textarea"}}<textarea class="input mono" name="content" rows="28" spellcheck="false" aria-label="File contents"
+          style="width: 100%; height: auto; padding: var(--space-2) var(--space-3); line-height: var(--line-height-code); resize: vertical">{{.Content}}</textarea>{{end}}
