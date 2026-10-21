@@ -303,3 +303,66 @@ func scanSessions(rows *sql.Rows) ([]Session, error) {
 	}
 	return out, rows.Err()
 }
+
+// CountSessions returns how many sessions are indexed.
+func (s *Store) CountSessions() (int, error) {
+	var n int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM sessions`).Scan(&n); err != nil {
+		return 0, fmt.Errorf("counting sessions: %w", err)
+	}
+	return n, nil
+}
+
+// RecentSessions returns up to limit sessions, most recently active first.
+func (s *Store) RecentSessions(limit int) ([]Session, error) {
+	rows, err := s.db.Query(`SELECT session_id, file_path, project_path, project_dir, display_name,
+                 custom_title, ai_title, first_prompt, message_count, file_size,
+                 last_activity, first_parent_uuid, file_mtime, indexed_at
+          FROM sessions ORDER BY last_activity DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, fmt.Errorf("listing recent sessions: %w", err)
+	}
+	defer rows.Close()
+	return scanSessions(rows)
+}
+
+// ProjectCounts returns every distinct project_path with its session count,
+// sorted by path.
+func (s *Store) ProjectCounts() ([]ProjectCount, error) {
+	rows, err := s.db.Query(`SELECT project_path, COUNT(*) FROM sessions
+WHERE project_path <> '' GROUP BY project_path ORDER BY project_path`)
+	if err != nil {
+		return nil, fmt.Errorf("counting sessions per project: %w", err)
+	}
+	defer rows.Close()
+	var out []ProjectCount
+	for rows.Next() {
+		var p ProjectCount
+		if err := rows.Scan(&p.Path, &p.Sessions); err != nil {
+			return nil, fmt.Errorf("scanning project count: %w", err)
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+// ProjectPathsByDir maps each projects/<encoded> folder name to the project
+// path recorded inside its transcripts. The encoding is lossy, so this is the
+// only reliable way back from a folder name to a path.
+func (s *Store) ProjectPathsByDir() (map[string]string, error) {
+	rows, err := s.db.Query(`SELECT DISTINCT project_dir, project_path FROM sessions
+WHERE project_dir <> '' AND project_path <> ''`)
+	if err != nil {
+		return nil, fmt.Errorf("mapping project dirs: %w", err)
+	}
+	defer rows.Close()
+	out := map[string]string{}
+	for rows.Next() {
+		var dir, path string
+		if err := rows.Scan(&dir, &path); err != nil {
+			return nil, fmt.Errorf("scanning project dir: %w", err)
+		}
+		out[dir] = path
+	}
+	return out, rows.Err()
+}

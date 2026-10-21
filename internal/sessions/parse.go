@@ -49,8 +49,15 @@ func decodeLine(b []byte) (line, bool) {
 // object, content-as-string and content-as-block-list (concatenating the text
 // of "text" blocks). Anything it cannot interpret yields empty strings.
 func roleAndText(raw json.RawMessage) (role, text string) {
+	role, text, _ = messageContent(raw)
+	return role, text
+}
+
+// messageContent is roleAndText plus whether the message carries only tool
+// calls or tool results and no prose of its own.
+func messageContent(raw json.RawMessage) (role, text string, toolOnly bool) {
 	if len(raw) == 0 {
-		return "", ""
+		return "", "", false
 	}
 
 	// message may itself be a JSON string holding the real object.
@@ -58,15 +65,15 @@ func roleAndText(raw json.RawMessage) (role, text string) {
 		var s string
 		if err := json.Unmarshal(raw, &s); err == nil {
 			if strings.TrimSpace(s) == "" {
-				return "", ""
+				return "", "", false
 			}
 			// Re-parse the inner string if it looks like JSON, else treat as text.
 			if trimmed := strings.TrimSpace(s); strings.HasPrefix(trimmed, "{") {
-				return roleAndText(json.RawMessage(s))
+				return messageContent(json.RawMessage(s))
 			}
-			return "", s
+			return "", s, false
 		}
-		return "", ""
+		return "", "", false
 	}
 
 	var m struct {
@@ -74,9 +81,33 @@ func roleAndText(raw json.RawMessage) (role, text string) {
 		Content json.RawMessage `json:"content"`
 	}
 	if err := json.Unmarshal(raw, &m); err != nil {
-		return "", ""
+		return "", "", false
 	}
-	return m.Role, contentText(m.Content)
+	return m.Role, contentText(m.Content), onlyToolBlocks(m.Content)
+}
+
+// onlyToolBlocks reports whether a content block list holds at least one
+// tool_use or tool_result block and no non-empty text block.
+func onlyToolBlocks(raw json.RawMessage) bool {
+	if len(raw) == 0 || raw[0] != '[' {
+		return false
+	}
+	var blocks []map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &blocks); err != nil {
+		return false
+	}
+	tool := false
+	for _, b := range blocks {
+		switch jsonString(b["type"]) {
+		case "tool_use", "tool_result":
+			tool = true
+		case "text":
+			if jsonString(b["text"]) != "" {
+				return false
+			}
+		}
+	}
+	return tool
 }
 
 // contentText flattens a content field to plain text. Content is either a

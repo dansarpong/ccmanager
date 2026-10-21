@@ -1,16 +1,26 @@
 {{define "_lint.html"}}<div id="lint-results">
   {{if .Findings}}
-  <ul class="findings">
+  <ul class="memory-list">
+    <li class="session-list__head">{{len .Findings}} {{if eq (len .Findings) 1}}finding{{else}}findings{{end}}</li>
     {{range .Findings}}
-    <li class="finding sev-{{.Severity}}">
-      <span class="rule">{{.Rule}}</span>
-      <span class="mono loc">{{.File}}{{if .Line}}:{{.Line}}{{end}}</span>
-      <div class="msg">{{.Message}}</div>
-      {{if .Snippet}}<div class="snippet mono">{{.Snippet}}</div>{{end}}
+    <li class="memory-entry">
+      <div class="memory-entry__summary">
+        <span class="memory-entry__title" title="{{.Message}}">{{.Message}}</span>
+        <span class="memory-entry__meta">
+          <span class="badge">{{if eq .Severity "warn"}}Warning{{else}}Info{{end}}</span>
+          <span class="mono">{{.Rule}}</span>
+          <span class="mono">{{tildePath .File}}{{if .Line}}:{{.Line}}{{end}}</span>
+        </span>
+        {{with .Snippet}}<span class="memory-entry__preview"><code>{{.}}</code></span>{{end}}
+      </div>
     </li>
     {{end}}
   </ul>
   {{else}}
-  <p class="empty">No static-lint findings.</p>
+  <div class="empty-state">
+    <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-check"/></svg>
+    <h2 class="empty-state__title">No lint findings</h2>
+    <p class="empty-state__text">Every file is under 200 lines, with no vague words, repeated lines or dead imports.</p>
+  </div>
   {{end}}
 </div>{{end}}

@@ -1,33 +1,98 @@
 {{define "memory_inventory.html"}}{{template "head" .}}
-  <section class="page-head">
-    <h1>Memory inventory</h1>
-    <a class="back" href="/memory/resolve">per-project resolved view →</a>
-  </section>
-  <p class="muted">Every memory file ccmanager found under the config root, for cleanup across projects.</p>
+  <header class="page-header">
+    <h1 class="page-header__title">Memory</h1>
+    <div class="page-header__meta">
+      <span>{{.Total}} {{if eq .Total 1}}file{{else}}files{{end}} under the config root</span>
+      {{if .ReadOnly}}<span>Auto memory is read-only</span>{{end}}
+    </div>
+    <div class="page-header__actions">
+      <a class="btn btn--secondary" href="/memory/resolve">{{template "icon" "i-folder"}}Resolve for a directory</a>
+    </div>
+  </header>
 
-  <table class="sessions">
-    <thead>
-      <tr><th>File</th><th>Kind</th><th class="num">Lines</th><th class="num">Size</th><th>Actions</th></tr>
-    </thead>
-    <tbody>
-      {{range .Items}}
-      <tr>
-        <td class="mono">{{.Path}}</td>
-        <td><span class="layer layer-{{.Kind}}">{{.Kind}}</span></td>
-        <td class="num">{{.Lines}}{{if .TooLong}} <span class="badge err" title="over 200 lines">long</span>{{end}}</td>
-        <td class="num">{{humanSize .Size}}</td>
-        <td class="actions">
-          {{if .ReadOnly}}<span class="badge readonly">read-only</span>{{else}}<a href="/memory/edit?path={{.Path}}">edit</a>{{end}}
-          <form method="post" action="/memory/delete" class="inline"
-                onsubmit="return confirm('Move this file to trash?')">
-            <input type="hidden" name="path" value="{{.Path}}">
-            <button type="submit" class="link-danger">delete</button>
-          </form>
-        </td>
-      </tr>
-      {{else}}
-      <tr><td colspan="5" class="empty">No memory files found.</td></tr>
+  <div class="toolbar">
+    <label class="field">
+      {{template "icon" "i-search"}}
+      <input class="input" id="memory-q" type="text" name="q" value="{{.Query}}" placeholder="Filter by name or path" aria-label="Filter memory" autocomplete="off"
+             hx-get="/memory" hx-trigger="input changed delay:150ms" hx-include="[name=kind]"
+             hx-target="#memory-list" hx-select="#memory-list > *" hx-swap="innerHTML"
+             hx-sync="this:replace" hx-indicator="closest .main">
+      <span class="spinner htmx-indicator" aria-hidden="true"></span>
+    </label>
+    <select class="select" name="kind" aria-label="Kind"
+            hx-get="/memory" hx-include="#memory-q"
+            hx-target="#memory-list" hx-select="#memory-list > *" hx-swap="innerHTML" hx-indicator="#memory-list">
+      <option value="">All kinds</option>
+      <option value="user"{{if eq .Kind "user"}} selected{{end}}>User CLAUDE.md</option>
+      <option value="user-rule"{{if eq .Kind "user-rule"}} selected{{end}}>User rules</option>
+      <option value="auto-memory"{{if eq .Kind "auto-memory"}} selected{{end}}>Auto memory</option>
+    </select>
+  </div>
+
+  <div class="page-body">
+    <ul class="memory-list swap-region" id="memory-list">
+      {{range .Entries}}{{template "memory-entry" .}}{{else}}
+      <li>
+        {{if .Filtered}}
+        <div class="empty-state">
+          <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-memory"/></svg>
+          <h2 class="empty-state__title">No memory files match</h2>
+          <p class="empty-state__text">Try fewer words, or show every kind.</p>
+          <a class="btn btn--ghost" href="/memory">Clear filter</a>
+        </div>
+        {{else}}
+        <div class="empty-state">
+          <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-memory"/></svg>
+          <h2 class="empty-state__title">No memory files found</h2>
+          <p class="empty-state__text">Add a CLAUDE.md or a rule under .claude/rules/, then reload.</p>
+          <a class="btn btn--secondary" href="/memory">{{template "icon" "i-refresh"}}Reload</a>
+        </div>
+        {{end}}
+      </li>
       {{end}}
-    </tbody>
-  </table>
+    </ul>
+  </div>
 {{template "foot" .}}{{end}}
+
+{{define "memory-entry"}}
+<li class="memory-entry swap-in" id="memory-{{.ID}}">
+  <details{{if .Open}} open{{end}}>
+    <summary class="memory-entry__summary">
+      <svg class="icon memory-entry__chevron" aria-hidden="true"><use href="/static/icons.svg#i-chevron"/></svg>
+      <span class="memory-entry__title">{{.Title}}</span>
+      <span class="memory-entry__meta">
+        <span>{{.KindLabel}}</span>
+        {{with .Project}}<span class="mono">{{.}}</span>{{end}}
+        {{with .SourceSessionID}}<span>From <span class="mono">{{shortID .}}</span></span>{{end}}
+        <span>Updated <time datetime="{{.UpdatedAt}}" title="{{prettyTime .UpdatedAt}}">{{relTime .UpdatedAt}}</time></span>
+        <span>{{.Lines}} {{if eq .Lines 1}}line{{else}}lines{{end}}</span>
+        {{if .TooLong}}<span>Over 200 lines</span>{{end}}
+        {{if .ReadOnly}}<span>Read-only</span>{{end}}
+      </span>
+      {{with .Preview}}<span class="memory-entry__preview">{{.}}</span>{{end}}
+    </summary>
+    <div class="memory-entry__body">
+      {{template "code-block" .Body}}
+      <p class="memory-entry__meta">
+        {{if .SourceIndexed}}<a href="/sessions/{{.SourceSessionID}}">Open source session</a>{{end}}
+        <span class="mono">{{.Path}}</span>
+        <span>{{humanSize .Size}}</span>
+      </p>
+    </div>
+  </details>
+  <div class="memory-entry__actions">
+    {{if .ReadOnly}}
+    <button class="btn btn--ghost btn--icon" type="button" aria-disabled="true"
+            aria-label="Edit — auto memory is read-only" title="Auto memory is read-only">{{template "icon" "i-edit"}}</button>
+    {{else}}
+    <a class="btn btn--ghost btn--icon" href="/memory/edit?path={{.Path}}" aria-label="Edit" title="Edit">{{template "icon" "i-edit"}}</a>
+    {{end}}
+    <form method="post" action="/memory/delete"
+          hx-post="/memory/delete" hx-target="#memory-{{.ID}}" hx-swap="outerHTML"
+          hx-confirm="Move this file to the trash? You can restore it for 30 days.">
+      <input type="hidden" name="path" value="{{.Path}}">
+      <button class="btn btn--ghost btn--icon btn--danger" type="submit" aria-label="Move to trash" title="Move to trash">{{template "icon" "i-trash"}}</button>
+    </form>
+  </div>
+</li>
+{{end}}

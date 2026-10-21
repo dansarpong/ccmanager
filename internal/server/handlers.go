@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"ccmanager/internal/sessions"
 	"ccmanager/internal/store"
@@ -16,27 +17,43 @@ import (
 func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
 	sort := r.URL.Query().Get("sort")
 	project := r.URL.Query().Get("project")
+	status := r.URL.Query().Get("status")
 
-	list, err := s.store.ListSessions(sort, project)
+	list, err := s.sessionList(sort, project, status)
 	if err != nil {
 		s.fail(w, "listing sessions", err)
 		return
 	}
-	projects, err := s.store.DistinctProjects()
-	if err != nil {
-		s.fail(w, "listing projects", err)
-		return
-	}
-
 	data := map[string]any{
 		"Title":    "Sessions — ccmanager",
 		"Sessions": list,
-		"Projects": projects,
 		"Sort":     sort,
 		"Project":  project,
+		"Status":   status,
+		"Filtered": project != "" || status != "",
 		"Active":   "sessions",
 	}
-	s.render(w, "sessions.html", data)
+	s.page(w, r, "sessions.html", data)
+}
+
+// sessionList lists sessions with their derived status, optionally keeping
+// only one status.
+func (s *Server) sessionList(sort, project, status string) ([]sessionView, error) {
+	list, err := s.store.ListSessions(sort, project)
+	if err != nil {
+		return nil, err
+	}
+	views := sessionViews(list, time.Now())
+	if status == "" {
+		return views, nil
+	}
+	kept := views[:0]
+	for _, v := range views {
+		if v.Status == status {
+			kept = append(kept, v)
+		}
+	}
+	return kept, nil
 }
 
 func (s *Server) handleSessionDetail(w http.ResponseWriter, r *http.Request) {
@@ -84,12 +101,12 @@ func (s *Server) handleSessionDetail(w http.ResponseWriter, r *http.Request) {
 
 	data := map[string]any{
 		"Title":   se.DisplayName + " — ccmanager",
-		"Session": se,
+		"Session": newSessionView(se, time.Now()),
 		"Chain":   chain,
 		"Page":    page,
 		"Active":  "sessions",
 	}
-	s.render(w, "session_detail.html", data)
+	s.page(w, r, "session_detail.html", data)
 }
 
 func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
@@ -153,17 +170,28 @@ func highlightSnippet(s string) template.HTML {
 	return template.HTML(escaped)
 }
 
+// handleRefresh re-indexes and returns the session list. The current filters
+// arrive in the POST body (hx-include), so they are read with FormValue.
 func (s *Server) handleRefresh(w http.ResponseWriter, r *http.Request) {
 	if _, err := s.reindex(); err != nil {
 		s.fail(w, "refreshing index", err)
 		return
 	}
-	list, err := s.store.ListSessions(r.URL.Query().Get("sort"), r.URL.Query().Get("project"))
+	project, status := r.FormValue("project"), r.FormValue("status")
+	list, err := s.sessionList(r.FormValue("sort"), project, status)
 	if err != nil {
 		s.fail(w, "listing sessions", err)
 		return
 	}
-	s.render(w, "_session_list.html", map[string]any{"Sessions": list})
+	s.render(w, "session-list", map[string]any{
+		"Sessions": list,
+		"Filtered": project != "" || status != "",
+	})
+}
+
+// handlePalette returns only the palette's grouped results for a query.
+func (s *Server) handlePalette(w http.ResponseWriter, r *http.Request) {
+	s.render(w, "palette-results", s.palette(strings.TrimSpace(r.URL.Query().Get("q"))))
 }
 
 func atoiDefault(s string, def int) int {

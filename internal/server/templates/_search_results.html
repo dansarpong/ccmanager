@@ -1,19 +1,34 @@
-{{define "_search_results.html"}}<div id="search-results">
-  {{if .Error}}<p class="error">Search error: {{.Error}}</p>{{end}}
-  {{if .Query}}
+{{define "_search_results.html"}}<div class="swap-region" id="search-results">
+  {{if .Error}}
+  <div class="empty-state">
+    <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-search"/></svg>
+    <h2 class="empty-state__title">Search failed</h2>
+    <p class="empty-state__text">{{.Error}}. Try different words.</p>
+  </div>
+  {{else if .Query}}
     {{if .Hits}}
-    <h2>{{len .Hits}} results for “{{.Query}}”</h2>
-    <ul class="hits">
+    <ul class="memory-list">
+      <li class="session-list__head">{{len .Hits}} {{if eq (len .Hits) 1}}result{{else}}results{{end}} for “{{.Query}}”</li>
       {{range .Hits}}
-      <li>
-        <a href="/sessions/{{.SessionID}}">{{if .DisplayName}}{{.DisplayName}}{{else}}{{.SessionID}}{{end}}</a>
-        <div class="project">{{.ProjectPath}}</div>
-        <div class="snippet">{{.SnippetHTML}}</div>
+      <li class="memory-entry swap-in">
+        <div class="memory-entry__summary">
+          <a class="memory-entry__title" href="/sessions/{{.SessionID}}">{{if .DisplayName}}{{.DisplayName}}{{else}}{{.SessionID}}{{end}}</a>
+          <span class="memory-entry__meta">
+            <span class="mono">{{shortID .SessionID}}</span>
+            {{with .ProjectPath}}<span class="mono">{{tildePath .}}</span>{{end}}
+          </span>
+          <span class="memory-entry__preview">{{.SnippetHTML}}</span>
+        </div>
       </li>
       {{end}}
     </ul>
-    {{else if not .Error}}
-    <p class="empty">No matches for “{{.Query}}”.</p>
+    {{else}}
+    <div class="empty-state">
+      <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-search"/></svg>
+      <h2 class="empty-state__title">No matches for “{{.Query}}”</h2>
+      <p class="empty-state__text">Try fewer words, or filter the list below by project.</p>
+      <a class="btn btn--ghost" href="/sessions">Clear search</a>
+    </div>
     {{end}}
   {{end}}
 </div>{{end}}

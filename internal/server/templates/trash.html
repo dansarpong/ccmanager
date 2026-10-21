@@ -1,34 +1,47 @@
 {{define "trash.html"}}{{template "head" .}}
-  <section class="page-head">
-    <h1>Trash</h1>
+  <header class="page-header">
+    <h1 class="page-header__title">Trash</h1>
+    <div class="page-header__meta">
+      <span>{{len .Entries}} {{if eq (len .Entries) 1}}item{{else}}items{{end}}</span>
+      <span>Restorable for 30 days, then purged</span>
+    </div>
     {{if .Entries}}
-    <form method="post" action="/trash/empty" onsubmit="return confirm('Permanently delete all trashed items?')">
-      <button type="submit" class="danger">Empty now</button>
-    </form>
+    <div class="page-header__actions">
+      <form method="post" action="/trash/empty"
+            hx-post="/trash/empty" hx-sync="this:drop"
+            hx-confirm="Permanently delete everything in the trash? This can't be undone.">
+        <button class="btn btn--ghost btn--danger" type="submit">{{template "icon" "i-trash"}}Empty trash</button>
+      </form>
+    </div>
     {{end}}
-  </section>
-  <p class="muted">Deleted files and pre-edit backups, restorable for 30 days, then purged.</p>
+  </header>
 
-  <table class="sessions">
-    <thead>
-      <tr><th>Original path</th><th>Kind</th><th>Deleted</th><th>Purges after</th><th></th></tr>
-    </thead>
-    <tbody>
+  <div class="page-body">
+    {{if .Entries}}
+    <ul class="session-list">
+      <li class="session-list__head" aria-hidden="true">
+        <span>Original path</span><span>Kind</span><span class="session-item__time">Deleted</span><span class="session-item__time">Purges</span><span></span>
+      </li>
       {{range .Entries}}
-      <tr>
-        <td class="mono">{{.OriginalPath}}</td>
-        <td><span class="layer">{{.Kind}}</span></td>
-        <td>{{prettyTime .DeletedAt}}</td>
-        <td>{{prettyTime .PurgeAfter}}</td>
-        <td>
+      <li>
+        <div class="session-item">
+          <span class="session-item__name mono" title="{{.OriginalPath}}">{{tildePath .OriginalPath}}</span>
+          <span class="badge">{{if eq .Kind "session"}}Session{{else if eq .Kind "memory-backup"}}Backup{{else}}Memory file{{end}}</span>
+          <time class="session-item__time" datetime="{{.DeletedAt}}" title="{{prettyTime .DeletedAt}}">{{relTime .DeletedAt}}</time>
+          <time class="session-item__time" datetime="{{.PurgeAfter}}" title="{{prettyTime .PurgeAfter}}">{{relTime .PurgeAfter}}</time>
           <form method="post" action="/trash/{{.ID}}/restore">
-            <button type="submit">Restore</button>
+            <button class="btn btn--ghost" type="submit">Restore</button>
           </form>
-        </td>
-      </tr>
-      {{else}}
-      <tr><td colspan="5" class="empty">Trash is empty.</td></tr>
+        </div>
+      </li>
       {{end}}
-    </tbody>
-  </table>
+    </ul>
+    {{else}}
+    <div class="empty-state">
+      <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-trash"/></svg>
+      <h2 class="empty-state__title">Trash is empty</h2>
+      <p class="empty-state__text">Deleted sessions and memory files stay here for 30 days.</p>
+    </div>
+    {{end}}
+  </div>
 {{template "foot" .}}{{end}}

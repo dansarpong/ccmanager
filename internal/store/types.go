@@ -37,3 +37,9 @@ type SearchHit struct {
 	ProjectPath string
 	Snippet     string // FTS5 snippet() with <mark> highlights
 }
+
+// ProjectCount is one project path with how many indexed sessions it has.
+type ProjectCount struct {
+	Path     string
+	Sessions int
+}

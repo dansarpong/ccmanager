@@ -1,17 +1,27 @@
-{{define "_transcript.html"}}<div id="transcript-page">
-  {{range .Page.Messages}}
-  <article class="msg msg-{{.Role}}">
-    <header><span class="role">{{.Role}}</span> <span class="ts">{{prettyTime .Timestamp}}</span></header>
-    <pre>{{.Text}}</pre>
-  </article>
-  {{else}}
-  <p class="empty">No text messages in this transcript.</p>
-  {{end}}
+{{define "_transcript.html"}}{{range .Page.Messages}}{{template "transcript-entry" .}}{{end}}{{template "transcript-more" .}}{{end}}
 
-  {{if .Page.HasMore}}
-  <button hx-get="/sessions/{{.Session.SessionID}}/transcript?offset={{add .Page.Offset .Page.Limit}}"
-          hx-target="#transcript-page" hx-swap="outerHTML">
-    Load more ({{.Page.Total}} total)
+{{define "transcript"}}
+<ol class="transcript density-compact" id="transcript">
+  {{range .Page.Messages}}{{template "transcript-entry" .}}{{end}}
+  {{template "transcript-more" .}}
+</ol>
+{{end}}
+
+{{define "transcript-entry"}}
+<li class="transcript-entry transcript-entry--{{.Role}} swap-in" id="m-{{.Index}}">
+  <time class="transcript-entry__time" datetime="{{.Timestamp}}" title="{{prettyTime .Timestamp}}">{{clock .Timestamp}}</time>
+  <span class="transcript-entry__role">{{.Role}}</span>
+  <div class="transcript-entry__text">{{.Text}}</div>
+</li>
+{{end}}
+
+{{define "transcript-more"}}{{if .Page.HasMore}}
+<li class="transcript__more" id="transcript-more">
+  <button class="btn btn--ghost" type="button"
+          hx-get="/sessions/{{.Session.SessionID}}/transcript?offset={{add .Page.Offset .Page.Limit}}"
+          hx-target="#transcript-more" hx-swap="outerHTML" hx-sync="this:drop">
+    Load more<span class="spinner htmx-indicator" aria-hidden="true"></span>
   </button>
-  {{end}}
-</div>{{end}}
+  <span class="transcript-entry__time">{{add .Page.Offset (len .Page.Messages)}} of {{.Page.Total}}</span>
+</li>
+{{end}}{{end}}

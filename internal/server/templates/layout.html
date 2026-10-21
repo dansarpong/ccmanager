@@ -1,24 +1,54 @@
 {{define "head"}}<!DOCTYPE html>
-<html lang="en">
+<html lang="en"{{with .Shell.Theme}} data-theme="{{.}}"{{end}}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="htmx-config" content='{"includeIndicatorStyles":false}'>
   <title>{{.Title}}</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%237aa2f7'/%3E%3Ctext x='8' y='12' font-size='11' text-anchor='middle' fill='%231a1b1e' font-family='sans-serif'%3Ec%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/htmx.min.js"></script>
+  <script src="/static/app.js" defer></script>
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="/sessions">ccmanager</a>
-    <nav>
-      <a href="/sessions" class="{{if eq .Active "sessions"}}active{{end}}">Sessions</a>
-      <a href="/memory" class="{{if eq .Active "memory"}}active{{end}}">Memory</a>
-      <a href="/trash" class="{{if eq .Active "trash"}}active{{end}}">Trash</a>
-    </nav>
-  </header>
-  <main>{{end}}
+  <div class="app">
+    {{template "sidebar" .Shell}}
+    <main class="main">{{end}}
 
-{{define "foot"}}  </main>
+{{define "foot"}}    </main>
+  </div>
+  {{template "palette" .Shell.Palette}}
 </body>
 </html>{{end}}
+
+{{define "icon"}}<svg class="icon" aria-hidden="true"><use href="/static/icons.svg#{{.}}"/></svg>{{end}}
+
+{{define "nav-item"}}
+<a class="nav-item" href="{{.Href}}"{{with .Title}} title="{{.}}"{{end}}{{if .Current}} aria-current="page"{{end}}>
+  {{template "icon" .Icon}}
+  <span class="nav-item__label">{{.Label}}</span>
+  <span class="nav-item__count" id="count-{{.Key}}">{{with .Count}}{{.}}{{end}}</span>
+</a>
+{{end}}
+
+{{define "sidebar"}}
+<nav class="sidebar" aria-label="Main">
+  <a class="sidebar__brand" href="/sessions">ccmanager</a>
+  <div class="sidebar__section">
+    {{range .Nav}}{{template "nav-item" .}}{{end}}
+  </div>
+  {{if .Projects}}
+  <div class="sidebar__section">
+    <div class="sidebar__label">Projects</div>
+    {{range .Projects}}{{template "nav-item" .}}{{end}}
+  </div>
+  {{end}}
+  <div class="sidebar__footer">
+    <button class="btn btn--ghost" type="button" commandfor="palette" command="show-modal">
+      {{template "icon" "i-search"}}Search<kbd class="kbd">{{if .IsMac}}⌘K{{else}}Ctrl K{{end}}</kbd>
+    </button>
+  </div>
+</nav>
+{{end}}
+
+{{define "nav-counts-oob"}}{{range .}}<span class="nav-item__count" id="count-{{.Key}}" hx-swap-oob="true">{{with .Count}}{{.}}{{end}}</span>{{end}}{{end}}

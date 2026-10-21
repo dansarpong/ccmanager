@@ -1,0 +1,15 @@
+{{define "code-block"}}
+<figure class="code-block{{if .Diff}} code-block--diff{{end}}">
+  <figcaption class="code-block__header">
+    <span class="code-block__title" title="{{.Path}}">{{.Path}}</span>
+    {{if .Diff}}<span class="code-block__stat"><span class="code-block__added">+{{.Added}}</span><span class="code-block__removed">−{{.Removed}}</span></span>{{end}}
+    <button class="btn btn--ghost btn--icon code-block__copy" type="button" data-copy="{{.ID}}" aria-label="Copy">
+      <svg class="icon icon--copy" aria-hidden="true"><use href="/static/icons.svg#i-copy"/></svg>
+      <svg class="icon icon--done" aria-hidden="true"><use href="/static/icons.svg#i-check"/></svg>
+    </button>
+  </figcaption>
+  <pre class="code-block__body" id="{{.ID}}"><code>
+    {{- range .Lines}}<span class="code-line{{with .Kind}} code-line--{{.}}{{end}}"{{with .N}} data-n="{{.}}"{{end}}>{{.Text}}</span>{{end -}}
+  </code></pre>
+</figure>
+{{end}}

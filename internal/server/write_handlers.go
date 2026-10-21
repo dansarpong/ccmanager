@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"ccmanager/internal/safeio"
+	"ccmanager/internal/store"
 	"ccmanager/internal/trash"
 )
 
@@ -72,7 +73,7 @@ func (s *Server) handleMemoryEdit(w http.ResponseWriter, r *http.Request) {
 		// The snapshot token lets save detect on-disk changes since open.
 		"Token": fmt.Sprintf("%d:%d", snap.Mtime, snap.Size),
 	}
-	s.render(w, "memory_edit.html", view)
+	s.page(w, r, "memory_edit.html", view)
 }
 
 func (s *Server) handleMemorySave(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +106,7 @@ func (s *Server) handleMemorySave(w http.ResponseWriter, r *http.Request) {
 	}
 	if changed && !force {
 		cur, _ := safeio.Snapshot(path)
-		s.render(w, "_save_conflict.html", map[string]any{
+		s.page(w, r, "_save_conflict.html", map[string]any{
 			"Title":   "Conflict — ccmanager",
 			"Active":  "memory",
 			"Path":    path,
@@ -145,6 +146,12 @@ func (s *Server) handleMemoryDelete(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, "moving file to trash", err)
 		return
 	}
+	if isHTMX(r) {
+		// An empty body removes the entry (outerHTML); the sidebar counts
+		// update out of band.
+		s.render(w, "nav-counts-oob", s.nav("memory", ""))
+		return
+	}
 	http.Redirect(w, r, "/memory", http.StatusSeeOther)
 }
 
@@ -165,12 +172,11 @@ func (s *Server) handleSessionDelete(w http.ResponseWriter, r *http.Request) {
 	if r.FormValue("confirm") != "1" {
 		mostRecent, _ := s.store.MostRecentlyActiveID()
 		if mostRecent == id {
-			s.render(w, "_delete_confirm.html", map[string]any{
-				"Title":   "Confirm delete — ccmanager",
-				"Active":  "sessions",
-				"Session": se,
-				"Warning": "This is your most recently active session.",
-			})
+			if isHTMX(r) {
+				w.Header().Set("HX-Redirect", "/sessions/"+url.PathEscape(id)+"/delete")
+				return
+			}
+			s.renderDeleteConfirm(w, r, se, true)
 			return
 		}
 	}
@@ -183,7 +189,36 @@ func (s *Server) handleSessionDelete(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, "removing session from index", err)
 		return
 	}
-	http.Redirect(w, r, "/sessions", http.StatusSeeOther)
+	redirectAfterPost(w, r, "/sessions")
+}
+
+// handleSessionDeleteConfirm shows the delete confirmation page, which an
+// htmx delete of the most recent session is redirected to.
+func (s *Server) handleSessionDeleteConfirm(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	se, err := s.store.GetSession(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.NotFound(w, r)
+			return
+		}
+		s.fail(w, "getting session", err)
+		return
+	}
+	mostRecent, _ := s.store.MostRecentlyActiveID()
+	s.renderDeleteConfirm(w, r, se, mostRecent == id)
+}
+
+func (s *Server) renderDeleteConfirm(w http.ResponseWriter, r *http.Request, se store.Session, mostRecent bool) {
+	data := map[string]any{
+		"Title":   "Confirm delete — ccmanager",
+		"Active":  "sessions",
+		"Session": se,
+	}
+	if mostRecent {
+		data["Warning"] = "This is your most recently active session."
+	}
+	s.page(w, r, "_delete_confirm.html", data)
 }
 
 func (s *Server) handleTrashList(w http.ResponseWriter, r *http.Request) {
@@ -192,7 +227,7 @@ func (s *Server) handleTrashList(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, "listing trash", err)
 		return
 	}
-	s.render(w, "trash.html", map[string]any{
+	s.page(w, r, "trash.html", map[string]any{
 		"Title":   "Trash — ccmanager",
 		"Active":  "trash",
 		"Entries": entries,
@@ -225,7 +260,7 @@ func (s *Server) handleTrashEmpty(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, "emptying trash", err)
 		return
 	}
-	http.Redirect(w, r, "/trash", http.StatusSeeOther)
+	redirectAfterPost(w, r, "/trash")
 }
 
 // helpers

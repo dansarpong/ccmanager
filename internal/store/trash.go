@@ -112,3 +112,12 @@ func scanTrashRows(rows *sql.Rows) (TrashEntry, error) {
 	}
 	return e, nil
 }
+
+// CountTrash returns how many entries the trash holds.
+func (s *Store) CountTrash() (int, error) {
+	var n int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM trash`).Scan(&n); err != nil {
+		return 0, fmt.Errorf("counting trash: %w", err)
+	}
+	return n, nil
+}

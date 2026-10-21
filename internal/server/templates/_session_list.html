@@ -1,22 +1,46 @@
-{{define "_session_list.html"}}<table id="session-list" class="sessions">
-  <thead>
-    <tr>
-      <th>Name</th><th>Project</th><th>Last activity</th><th class="num">Msgs</th><th class="num">Size</th>
-    </tr>
-  </thead>
-  <tbody>
-    {{range .Sessions}}
-    <tr>
-      <td><a href="/sessions/{{.SessionID}}">{{.DisplayName}}</a>
-        {{if .FirstParentUUID}}<span class="badge" title="Resumed or branched from another session">↳ resumed</span>{{end}}
-      </td>
-      <td class="project">{{.ProjectPath}}</td>
-      <td>{{prettyTime .LastActivity}}</td>
-      <td class="num">{{.MessageCount}}</td>
-      <td class="num">{{humanSize .FileSize}}</td>
-    </tr>
-    {{else}}
-    <tr><td colspan="5" class="empty">No sessions indexed yet. Click “Refresh index”.</td></tr>
-    {{end}}
-  </tbody>
-</table>{{end}}
+{{define "session-list"}}
+<ul class="session-list swap-region" id="session-list">
+  <li class="session-list__head" aria-hidden="true">
+    <span>Name</span><span>Status</span><span class="session-item__id">ID</span><span class="session-item__tokens">Messages</span><span class="session-item__time">Last active</span>
+  </li>
+  {{range .Sessions}}{{template "session-item" .}}{{else}}
+  <li>{{if .Filtered}}{{template "empty-filtered-sessions" .}}{{else}}{{template "empty-sessions" .}}{{end}}</li>
+  {{end}}
+</ul>
+{{end}}
+
+{{define "session-item"}}
+<li class="swap-in">
+  <a class="session-item" href="/sessions/{{.SessionID}}"{{if .Current}} aria-current="true"{{end}}>
+    <span class="session-item__name" title="{{.ProjectPath}}">{{.DisplayName}}</span>
+    {{template "status-badge" .}}
+    <span class="session-item__id">{{shortID .SessionID}}</span>
+    <span class="session-item__tokens" title="{{.MessageCount}} messages">{{compactNum .MessageCount}}</span>
+    <time class="session-item__time" datetime="{{.LastActivity}}" title="{{prettyTime .LastActivity}}">{{relTime .LastActivity}}</time>
+  </a>
+</li>
+{{end}}
+
+{{define "status-badge"}}<span class="badge badge--{{.Status}}" id="status-{{.SessionID}}">{{.StatusLabel}}</span>{{end}}
+
+{{define "empty-sessions"}}
+<div class="empty-state">
+  <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-sessions"/></svg>
+  <h2 class="empty-state__title">No sessions indexed yet</h2>
+  <p class="empty-state__text">Run claude in any project, then refresh the index.</p>
+  <button class="btn btn--secondary" type="button"
+          hx-post="/refresh" hx-target="#session-list" hx-select="#session-list > *" hx-swap="innerHTML"
+          hx-indicator="#session-list" hx-sync="this:drop">
+    {{template "icon" "i-refresh"}}Refresh index
+  </button>
+</div>
+{{end}}
+
+{{define "empty-filtered-sessions"}}
+<div class="empty-state">
+  <svg class="icon icon--lg" aria-hidden="true"><use href="/static/icons.svg#i-sessions"/></svg>
+  <h2 class="empty-state__title">No sessions match these filters</h2>
+  <p class="empty-state__text">Clear the filters to see every session.</p>
+  <a class="btn btn--ghost" href="/sessions">Clear filters</a>
+</div>
+{{end}}

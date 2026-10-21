@@ -87,3 +87,24 @@ func TestRoleAndTextEmpty(t *testing.T) {
 		t.Errorf("nil message should yield empty, got role=%q text=%q", role, text)
 	}
 }
+
+func TestMessageContentToolOnly(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+		want bool
+	}{
+		{"tool result only", `{"role":"user","content":[{"type":"tool_result","content":"ok"}]}`, true},
+		{"tool use only", `{"role":"assistant","content":[{"type":"tool_use","name":"Read"}]}`, true},
+		{"empty text beside tool use", `{"role":"assistant","content":[{"type":"text","text":""},{"type":"tool_use","name":"Bash"}]}`, true},
+		{"prose beside tool use", `{"role":"assistant","content":[{"type":"text","text":"Reading it"},{"type":"tool_use","name":"Read"}]}`, false},
+		{"content as string", `{"role":"user","content":"hello"}`, false},
+		{"text blocks only", `{"role":"user","content":[{"type":"text","text":"hi"}]}`, false},
+		{"message as JSON string", `"{\"role\":\"user\",\"content\":[{\"type\":\"tool_result\",\"content\":\"ok\"}]}"`, true},
+	}
+	for _, c := range cases {
+		if _, _, got := messageContent(json.RawMessage(c.raw)); got != c.want {
+			t.Errorf("%s: toolOnly = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
