@@ -1,5 +1,8 @@
 # ccmanager
 
+[![CI](https://github.com/dansarpong/project-ccmanager/actions/workflows/ci.yml/badge.svg)](https://github.com/dansarpong/project-ccmanager/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A small, local web tool for seeing, searching, and safely cleaning up everything
 Claude Code keeps on your machine: your **session transcripts** and your **memory
 files** (`CLAUDE.md`, rules, and auto memory).
@@ -32,13 +35,11 @@ assembled for a given working directory. ccmanager fills those gaps:
 
 ## Build and run
 
-Go 1.26+ is required. On this machine Go lives at `/usr/local/go/bin/go`; if it
-is not already on your `PATH`, prepend it:
+Go 1.26+ is required and must be on your `PATH`.
 
 ```sh
-export PATH=/usr/local/go/bin:$PATH
-
-cd ccmanager
+git clone https://github.com/dansarpong/project-ccmanager.git
+cd project-ccmanager
 go build ./...
 go run . -port 8765      # default port is 8765
 ```
@@ -149,8 +150,8 @@ ccmanager/
 │   ├── advisor/            static lint + claude print-mode client + diff generation
 │   ├── trash/              move-to-trash, backup-before-write, restore, 30-day purge
 │   ├── safeio/             atomic write, on-disk change detection
-│   └── server/             http handlers, htmx routes, html/template rendering
-└── web/                    (templates and static assets are embedded under internal/server)
+│   └── server/             http handlers, htmx routes, html/template rendering;
+│                           templates and static assets are embedded here
 ```
 
 The SQLite index (`<config-dir>/ccmanager/index.db`) holds:
@@ -241,7 +242,7 @@ The two subtle subsystems are covered by focused tests:
 Run them with:
 
 ```sh
-PATH=/usr/local/go/bin:$PATH go test ./...
+go test ./...
 ```
 
 ---
@@ -259,3 +260,22 @@ they can be added later, but they are not implemented:
 
 Editing is limited to `CLAUDE.md`, `CLAUDE.local.md`, and rules files; auto memory
 is view-and-delete only.
+
+---
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the
+safety invariants every change must keep, and the PR process. Everyone taking
+part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md). Please
+report security problems privately as described in [SECURITY.md](SECURITY.md).
+
+---
+
+## License
+
+ccmanager is released under the [MIT License](LICENSE).
+
+It bundles [htmx](https://htmx.org) 2.0.4
+(`internal/server/static/htmx.min.js`), which is licensed under the Zero-Clause
+BSD license. Go dependencies listed in `go.mod` are under their own licenses.
