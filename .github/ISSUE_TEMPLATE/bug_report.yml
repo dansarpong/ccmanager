@@ -1,0 +1,65 @@
+name: Bug report
+description: Something in ccmanager doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug.
+
+        **Don't paste real transcript or memory file contents.** They can contain private data and secrets. Use a minimal, made-up example instead.
+
+        Security problems go through a [private advisory](https://github.com/dansarpong/project-ccmanager/security/advisories/new), not here.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you saw, including any error message.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `go run . -port 8765`
+        2. Open ...
+        3. Click ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: ccmanager commit
+      description: Output of `git rev-parse --short HEAD`
+    validations:
+      required: true
+  - type: input
+    id: claude-version
+    attributes:
+      label: Claude Code version
+      description: Output of `claude --version`. The transcript format changes between versions, so this matters for parsing and memory bugs.
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: e.g. Ubuntu 24.04, macOS 15
+    validations:
+      required: true
+  - type: input
+    id: go-version
+    attributes:
+      label: Go version
+      description: Output of `go version`
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant server output. Remove anything private first.
+      render: shell
