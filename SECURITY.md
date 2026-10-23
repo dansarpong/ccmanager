@@ -37,7 +37,8 @@ In scope:
 
 - Anything that lets the server be reached or driven by someone other than the
   local user. That includes requests from another machine, and cross-origin or
-  DNS-rebinding requests sent by a web page open in the user's browser.
+  DNS-rebinding requests sent by a web page open in the user's browser, and any
+  bypass of the Host or cross-origin checks.
 - Edit, delete, or restore routes that read or write outside the intended
   config and project directories (path traversal).
 - Write or delete paths that bypass the atomic write, the backup-before-overwrite,
