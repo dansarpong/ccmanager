@@ -14,7 +14,7 @@ that an issue reproduces on the latest `main` before reporting.
 **Please do not open a public issue for a security problem.**
 
 Report it privately through GitHub:
-<https://github.com/dansarpong/project-ccmanager/security/advisories/new>
+<https://github.com/dansarpong/ccmanager/security/advisories/new>
 
 Include as much of the following as you can:
 

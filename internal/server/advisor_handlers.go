@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"ccmanager/internal/advisor"
-	"ccmanager/internal/safeio"
+	"github.com/dansarpong/ccmanager/internal/advisor"
+	"github.com/dansarpong/ccmanager/internal/safeio"
 )
 
 // advisorTimeout bounds a single claude invocation so a hung CLI cannot wedge a

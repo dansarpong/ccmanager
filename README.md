@@ -1,6 +1,6 @@
 # ccmanager
 
-[![CI](https://github.com/dansarpong/project-ccmanager/actions/workflows/ci.yml/badge.svg)](https://github.com/dansarpong/project-ccmanager/actions/workflows/ci.yml)
+[![CI](https://github.com/dansarpong/ccmanager/actions/workflows/ci.yml/badge.svg)](https://github.com/dansarpong/ccmanager/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A small, local web tool for seeing, searching, and safely cleaning up everything
@@ -35,13 +35,20 @@ assembled for a given working directory. ccmanager fills those gaps:
 
 ## Build and run
 
-Go 1.26+ is required and must be on your `PATH`.
+Go 1.26+ is required and must be on your `PATH`. To install the binary:
 
 ```sh
-git clone https://github.com/dansarpong/project-ccmanager.git
-cd project-ccmanager
+go install github.com/dansarpong/ccmanager@latest
+ccmanager -port 8765     # default port is 8765
+```
+
+Or build from a clone:
+
+```sh
+git clone https://github.com/dansarpong/ccmanager.git
+cd ccmanager
 go build ./...
-go run . -port 8765      # default port is 8765
+go run . -port 8765
 ```
 
 Then open <http://127.0.0.1:8765>. The first launch indexes all transcripts

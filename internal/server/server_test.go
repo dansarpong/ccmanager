@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"ccmanager/internal/advisor"
-	"ccmanager/internal/config"
-	"ccmanager/internal/sessions"
-	"ccmanager/internal/store"
-	"ccmanager/internal/trash"
+	"github.com/dansarpong/ccmanager/internal/advisor"
+	"github.com/dansarpong/ccmanager/internal/config"
+	"github.com/dansarpong/ccmanager/internal/sessions"
+	"github.com/dansarpong/ccmanager/internal/store"
+	"github.com/dansarpong/ccmanager/internal/trash"
 )
 
 const testSessionID = "a3f9c2e1-5b7d-4c1e-9f02-8e6a1d3b7c45"

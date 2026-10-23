@@ -5,8 +5,8 @@ import (
 	"runtime"
 	"strings"
 
-	"ccmanager/internal/advisor"
-	"ccmanager/internal/memory"
+	"github.com/dansarpong/ccmanager/internal/advisor"
+	"github.com/dansarpong/ccmanager/internal/memory"
 )
 
 // memoryInput builds the pure engine's Input from the app config. The managed

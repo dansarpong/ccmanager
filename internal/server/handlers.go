@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"ccmanager/internal/sessions"
-	"ccmanager/internal/store"
+	"github.com/dansarpong/ccmanager/internal/sessions"
+	"github.com/dansarpong/ccmanager/internal/store"
 )
 
 func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {

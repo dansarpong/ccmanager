@@ -9,11 +9,11 @@ import (
 	"net"
 	"net/http"
 
-	"ccmanager/internal/advisor"
-	"ccmanager/internal/config"
-	"ccmanager/internal/sessions"
-	"ccmanager/internal/store"
-	"ccmanager/internal/trash"
+	"github.com/dansarpong/ccmanager/internal/advisor"
+	"github.com/dansarpong/ccmanager/internal/config"
+	"github.com/dansarpong/ccmanager/internal/sessions"
+	"github.com/dansarpong/ccmanager/internal/store"
+	"github.com/dansarpong/ccmanager/internal/trash"
 )
 
 // Server holds the dependencies shared by all handlers.

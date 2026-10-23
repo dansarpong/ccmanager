@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"ccmanager/internal/safeio"
-	"ccmanager/internal/store"
-	"ccmanager/internal/trash"
+	"github.com/dansarpong/ccmanager/internal/safeio"
+	"github.com/dansarpong/ccmanager/internal/store"
+	"github.com/dansarpong/ccmanager/internal/trash"
 )
 
 // isAutoMemory reports whether path lives inside a project's auto-memory

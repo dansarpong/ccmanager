@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	"ccmanager/internal/store"
+	"github.com/dansarpong/ccmanager/internal/store"
 )
 
 // RetentionDays is how long a trashed file can be restored before it is purged.

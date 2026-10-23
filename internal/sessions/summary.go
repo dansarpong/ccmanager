@@ -3,7 +3,7 @@ package sessions
 import (
 	"strings"
 
-	"ccmanager/internal/store"
+	"github.com/dansarpong/ccmanager/internal/store"
 )
 
 // DisplayName picks a human-readable name for a session. Precedence, verified

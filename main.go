@@ -12,11 +12,11 @@ import (
 	"os"
 	"time"
 
-	"ccmanager/internal/config"
-	"ccmanager/internal/server"
-	"ccmanager/internal/sessions"
-	"ccmanager/internal/store"
-	"ccmanager/internal/trash"
+	"github.com/dansarpong/ccmanager/internal/config"
+	"github.com/dansarpong/ccmanager/internal/server"
+	"github.com/dansarpong/ccmanager/internal/sessions"
+	"github.com/dansarpong/ccmanager/internal/store"
+	"github.com/dansarpong/ccmanager/internal/trash"
 )
 
 func main() {

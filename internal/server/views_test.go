@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"ccmanager/internal/store"
+	"github.com/dansarpong/ccmanager/internal/store"
 )
 
 func TestMarkMatchesEscapesAndMarks(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"ccmanager/internal/store"
+	"github.com/dansarpong/ccmanager/internal/store"
 )
 
 // sessionActiveWindow is how recently a transcript must have been written for

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"ccmanager/internal/config"
-	"ccmanager/internal/store"
+	"github.com/dansarpong/ccmanager/internal/config"
+	"github.com/dansarpong/ccmanager/internal/store"
 )
 
 // IndexResult reports what an Index run did.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"ccmanager/internal/memory"
+	"github.com/dansarpong/ccmanager/internal/memory"
 )
 
 // vagueWords are weak instruction words that tend to produce inconsistent
