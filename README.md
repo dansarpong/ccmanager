@@ -71,6 +71,11 @@ This tool can change and delete your files, so it is conservative by design:
 
 - **Localhost only.** The server binds `127.0.0.1`. It is never reachable from
   the network.
+- **Browser requests are checked.** Every request must be addressed to
+  `127.0.0.1` or `localhost`, which defeats DNS rebinding, and any request that
+  changes something must come from ccmanager's own pages (Go's
+  `http.CrossOriginProtection`). Another website open in your browser can't
+  trigger a delete or an edit.
 - **Trash with 30-day restore.** Deleting a session or a memory file moves it
   into `<config-dir>/ccmanager/trash/` with a manifest entry; it is restorable
   for 30 days, then purged. Purge runs opportunistically on launch, and there is

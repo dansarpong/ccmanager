@@ -86,6 +86,8 @@ func do(t *testing.T, h http.Handler, method, target string, form url.Values, ht
 	} else {
 		req = httptest.NewRequest(method, target, nil)
 	}
+	// httptest defaults Host to example.com, which localOnly rejects.
+	req.Host = "127.0.0.1:8765"
 	if htmx {
 		req.Header.Set("HX-Request", "true")
 	}
@@ -207,6 +209,52 @@ func TestHTMXWritesKeepSafetyNet(t *testing.T) {
 	rec = do(t, h, "POST", "/trash/empty", url.Values{}, false)
 	if rec.Code != http.StatusSeeOther {
 		t.Errorf("plain trash empty = %d, want 303", rec.Code)
+	}
+}
+
+func TestRequestGuards(t *testing.T) {
+	h, cfg := newTestServer(t)
+	userMemory := filepath.Join(cfg.ConfigRoot, "CLAUDE.md")
+
+	cases := []struct {
+		name    string
+		method  string
+		target  string
+		host    string
+		form    url.Values
+		headers map[string]string
+		want    int
+	}{
+		{"rebound host read", "GET", "/sessions", "evil.example:8765", nil, nil, http.StatusForbidden},
+		{"localhost read", "GET", "/sessions", "localhost:8765", nil, nil, http.StatusOK},
+		{"cross-site delete", "POST", "/memory/delete", "127.0.0.1:8765", url.Values{"path": {userMemory}},
+			map[string]string{"Sec-Fetch-Site": "cross-site"}, http.StatusForbidden},
+		{"other local port", "POST", "/trash/empty", "127.0.0.1:8765", url.Values{},
+			map[string]string{"Sec-Fetch-Site": "same-site"}, http.StatusForbidden},
+		{"foreign origin", "POST", "/trash/empty", "127.0.0.1:8765", url.Values{},
+			map[string]string{"Origin": "http://evil.example"}, http.StatusForbidden},
+		{"same-origin post", "POST", "/trash/empty", "127.0.0.1:8765", url.Values{},
+			map[string]string{"Sec-Fetch-Site": "same-origin"}, http.StatusSeeOther},
+		{"non-browser post", "POST", "/trash/empty", "127.0.0.1:8765", url.Values{}, nil, http.StatusSeeOther},
+	}
+	for _, c := range cases {
+		req := httptest.NewRequest(c.method, c.target, strings.NewReader(c.form.Encode()))
+		req.Host = c.host
+		if c.form != nil {
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		}
+		for k, v := range c.headers {
+			req.Header.Set(k, v)
+		}
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != c.want {
+			t.Errorf("%s: %s %s = %d, want %d", c.name, c.method, c.target, rec.Code, c.want)
+		}
+	}
+
+	if _, err := os.Stat(userMemory); err != nil {
+		t.Errorf("refused cross-site delete still removed the file: %v", err)
 	}
 }
 

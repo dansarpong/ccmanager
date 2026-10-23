@@ -59,6 +59,10 @@ point of the tool. A change that weakens any of these will not be merged:
   since it was opened.
 - **Auto memory is read-only** — view and delete only; edit routes return 403.
 - **Localhost only** — the server binds `127.0.0.1` and nothing else.
+- **Browser requests are checked** — `Server.Routes` rejects any Host other
+  than `127.0.0.1` or `localhost`, and cross-origin requests that aren't GET,
+  HEAD, or OPTIONS. **GET handlers must never change state**, because the
+  cross-origin check doesn't cover them.
 - **The advisor never writes on its own** — it runs `claude` with no tools and
   only proposes diffs the user approves.
 

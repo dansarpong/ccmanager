@@ -6,6 +6,7 @@ package server
 import (
 	"fmt"
 	"html/template"
+	"net"
 	"net/http"
 
 	"ccmanager/internal/advisor"
@@ -40,7 +41,8 @@ func New(cfg config.Config, st *store.Store, tr *trash.Trash) (*Server, error) {
 }
 
 // Routes returns the HTTP handler with all routes registered, using Go 1.22+
-// method-based routing.
+// method-based routing, behind the loopback Host check and cross-origin
+// protection for state-changing requests.
 func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 
@@ -73,7 +75,24 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /advisor/analyze", s.handleAdvisorAnalyze)
 	mux.HandleFunc("POST /advisor/apply", s.handleAdvisorApply)
 
-	return mux
+	return localOnly(http.NewCrossOriginProtection().Handler(mux))
+}
+
+// localOnly rejects requests not addressed to a loopback host name. Binding
+// 127.0.0.1 doesn't stop DNS rebinding: a page on a domain re-pointed at
+// 127.0.0.1 is same-origin to the browser, and only its Host header gives it away.
+func localOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host, _, err := net.SplitHostPort(r.Host)
+		if err != nil {
+			host = r.Host
+		}
+		if host != "127.0.0.1" && host != "localhost" {
+			http.Error(w, "ccmanager only answers requests addressed to 127.0.0.1 or localhost", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // reindex re-runs the indexer; used by /refresh and at startup.
