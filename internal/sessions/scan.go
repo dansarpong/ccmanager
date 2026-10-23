@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"ccmanager/internal/store"
+	"github.com/dansarpong/ccmanager/internal/store"
 )
 
 // ScanFile reads one transcript file and returns its session summary plus the

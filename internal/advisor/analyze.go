@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"ccmanager/internal/memory"
+	"github.com/dansarpong/ccmanager/internal/memory"
 )
 
 // RewriteSuggestion proposes a concrete replacement for a weak instruction.

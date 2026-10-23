@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"ccmanager/internal/store"
+	"github.com/dansarpong/ccmanager/internal/store"
 )
 
 // TranscriptMessage is one rendered message for the transcript viewer.

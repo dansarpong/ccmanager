@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"ccmanager/internal/config"
-	"ccmanager/internal/store"
+	"github.com/dansarpong/ccmanager/internal/config"
+	"github.com/dansarpong/ccmanager/internal/store"
 )
 
 // writeProjectTranscript writes one transcript line into

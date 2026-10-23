@@ -9,7 +9,7 @@ body:
 
         **Don't paste real transcript or memory file contents.** They can contain private data and secrets. Use a minimal, made-up example instead.
 
-        Security problems go through a [private advisory](https://github.com/dansarpong/project-ccmanager/security/advisories/new), not here.
+        Security problems go through a [private advisory](https://github.com/dansarpong/ccmanager/security/advisories/new), not here.
   - type: textarea
     id: what-happened
     attributes:

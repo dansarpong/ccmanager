@@ -14,8 +14,8 @@ You need **Go 1.26+** on your `PATH`. The `claude` CLI is optional; without it
 the LLM advisor shows an "unavailable" banner and everything else still works.
 
 ```sh
-git clone https://github.com/dansarpong/project-ccmanager.git
-cd project-ccmanager
+git clone https://github.com/dansarpong/ccmanager.git
+cd ccmanager
 
 go build ./...
 go run . -port 8765          # then open http://127.0.0.1:8765

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"ccmanager/internal/memory"
+	"github.com/dansarpong/ccmanager/internal/memory"
 )
 
 func TestLintVagueAndDuplicateAndDead(t *testing.T) {

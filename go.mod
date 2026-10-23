@@ -1,4 +1,4 @@
-module ccmanager
+module github.com/dansarpong/ccmanager
 
 go 1.26
 

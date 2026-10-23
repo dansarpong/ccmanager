@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"ccmanager/internal/store"
+	"github.com/dansarpong/ccmanager/internal/store"
 )
 
 func setup(t *testing.T) (*Trash, string) {
